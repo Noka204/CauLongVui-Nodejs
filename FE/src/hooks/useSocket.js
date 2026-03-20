@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
 /**
  * Custom hook to manage socket.io connection and real-time events.
- * @returns {Object} socket - The socket instance
+ * @returns {{ socket: Object|null, joinCourt: Function, leaveCourt: Function, holdSlot: Function, unholdSlot: Function }}
  */
 export const useSocket = () => {
   const socketRef = useRef(null);
@@ -12,7 +14,7 @@ export const useSocket = () => {
 
   useEffect(() => {
     // Initialize socket connection
-    socketRef.current = io('http://localhost:5000', {
+    socketRef.current = io(SOCKET_URL, {
       transports: ['websocket'],
     });
 
@@ -22,21 +24,32 @@ export const useSocket = () => {
       console.log('Socket connected:', socket.id);
     });
 
-    // Real-time Event Listeners
+    // ─── Real-time Event Listeners ─────────────────────────────────
+
+    // Khi người khác đang giữ chỗ (selecting)
     socket.on('slot:holding', (data) => {
       console.log('Slot holding:', data);
-      // Logic for local UI updates if needed (e.g., yellow badge)
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     });
 
+    // Khi slot được giải phóng (unhold, disconnect, timeout, cancel)
     socket.on('slot:released', (data) => {
       console.log('Slot released:', data);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     });
 
+    // Khi booking được tạo thành công
+    socket.on('slot:booked', (data) => {
+      console.log('Slot booked:', data);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
+    });
+
+    // Khi booking được xác nhận (sau payment)
     socket.on('slot:confirmed', (data) => {
       console.log('Slot confirmed:', data);
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries(['courts']);
-      queryClient.invalidateQueries(['bookings']);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['courts'] });
     });
 
     return () => {
@@ -46,5 +59,57 @@ export const useSocket = () => {
     };
   }, [queryClient]);
 
-  return socketRef.current;
+  /**
+   * Join a court room to receive realtime events
+   * @param {string} courtId
+   */
+  const joinCourt = useCallback((courtId) => {
+    if (socketRef.current && courtId) {
+      socketRef.current.emit('join_court', courtId);
+    }
+  }, []);
+
+  /**
+   * Leave a court room
+   * @param {string} courtId
+   */
+  const leaveCourt = useCallback((courtId) => {
+    if (socketRef.current && courtId) {
+      socketRef.current.emit('leave_court', courtId);
+    }
+  }, []);
+
+  /**
+   * Hold a slot (user is selecting, notify others)
+   * @param {Object} params
+   * @param {string} params.courtId
+   * @param {string} params.slotId
+   * @param {string} params.bookingDate
+   */
+  const holdSlot = useCallback(({ courtId, slotId, bookingDate }) => {
+    if (socketRef.current) {
+      socketRef.current.emit('slot:hold', { courtId, slotId, bookingDate });
+    }
+  }, []);
+
+  /**
+   * Release a held slot (user cancelled selection)
+   * @param {Object} params
+   * @param {string} params.courtId
+   * @param {string} params.slotId
+   * @param {string} params.bookingDate
+   */
+  const unholdSlot = useCallback(({ courtId, slotId, bookingDate }) => {
+    if (socketRef.current) {
+      socketRef.current.emit('slot:unhold', { courtId, slotId, bookingDate });
+    }
+  }, []);
+
+  return {
+    socket: socketRef.current,
+    joinCourt,
+    leaveCourt,
+    holdSlot,
+    unholdSlot,
+  };
 };

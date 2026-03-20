@@ -1,7 +1,7 @@
 /**
  * Map Payment model to DTO
- * @param {Object} payment 
- * @returns {Object}
+ * @param {Object} payment
+ * @returns {Object|null}
  */
 const paymentDto = (payment) => {
   if (!payment) return null;
@@ -11,7 +11,7 @@ const paymentDto = (payment) => {
     userId: payment.userId,
     amount: payment.amount,
     paymentMethod: payment.paymentMethod,
-    gatewayResponse: payment.gatewayResponse,
+    transactionRef: payment.transactionRef,
     status: payment.status,
     paymentDate: payment.paymentDate,
   };

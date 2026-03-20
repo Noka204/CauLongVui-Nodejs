@@ -13,6 +13,7 @@ const createVoucherSchema = z.object({
     usageLimit: z.number().int().min(1).optional(),
     maxUsagePerUser: z.number().int().min(1).optional(),
     targetUserId: z.string().regex(/^[0-9a-fA-F]{24}$/).optional().nullable(),
+    isActive: z.boolean().optional(),
   }),
 });
 

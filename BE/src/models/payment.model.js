@@ -21,8 +21,12 @@ const paymentSchema = new mongoose.Schema({
     required: true,
     enum: ['MoMo', 'VNPay', 'Cash'],
   },
+  transactionRef: {
+    type: String,
+    default: null,
+  },
   gatewayResponse: {
-    type: String, // Stringified JSON or large text as in SQL NVARCHAR(MAX)
+    type: String,
     default: null,
   },
   status: {

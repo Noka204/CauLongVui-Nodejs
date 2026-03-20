@@ -1,15 +1,17 @@
 const Payment = require('../models/payment.model');
 const bookingService = require('./booking.service');
 const userService = require('./user.service');
+const vnpayService = require('./external/vnpay.service');
+const momoService = require('./external/momo.service');
+const VnPayLibrary = require('../utils/vnpay.lib');
 const { BadRequestError } = require('../exceptions/BadRequestError');
 
 /**
  * Create a new payment record
- * @param {Object} paymentData 
+ * @param {Object} paymentData
  * @returns {Promise<Object>}
  */
 const create = async (paymentData) => {
-  // Verify related entities exist
   await bookingService.findById(paymentData.bookingId);
   await userService.findById(paymentData.userId);
 
@@ -17,7 +19,10 @@ const create = async (paymentData) => {
 };
 
 /**
- * Find all payments
+ * Find all payments with pagination
+ * @param {Object} query
+ * @param {number} [query.page=1]
+ * @param {number} [query.limit=10]
  * @returns {Promise<Object>}
  */
 const findAll = async ({ page = 1, limit = 10 }) => {
@@ -29,7 +34,7 @@ const findAll = async ({ page = 1, limit = 10 }) => {
 
 /**
  * Find payment by ID
- * @param {string} id 
+ * @param {string} id
  * @returns {Promise<Object>}
  */
 const findById = async (id) => {
@@ -40,8 +45,8 @@ const findById = async (id) => {
 
 /**
  * Update payment status
- * @param {string} id 
- * @param {string} status 
+ * @param {string} id
+ * @param {string} status
  * @returns {Promise<Object>}
  */
 const updateStatus = async (id, status) => {
@@ -50,9 +55,246 @@ const updateStatus = async (id, status) => {
   return payment;
 };
 
+// ─── VNPay Integration ────────────────────────────────────────────────
+
+/**
+ * Create VNPay payment: save Pending record → generate VNPay URL
+ * @param {Object} params
+ * @param {string} params.bookingId
+ * @param {string} params.userId
+ * @param {import('express').Request} params.req - Express request for IP
+ * @returns {Promise<{ paymentUrl: string, paymentId: string }>}
+ */
+const createVnpayPayment = async ({ bookingId, userId, req }) => {
+  const booking = await bookingService.findById(bookingId);
+  await userService.findById(userId);
+
+  const payment = await Payment.create({
+    bookingId,
+    userId,
+    amount: booking.totalPrice,
+    paymentMethod: 'VNPay',
+    status: 'Pending',
+  });
+
+  const ipAddress = VnPayLibrary.getIpAddress(req);
+
+  const paymentUrl = vnpayService.createPaymentUrl({
+    orderId: payment._id.toString(),
+    amount: booking.totalPrice,
+    orderDescription: `Thanh toan dat san ${bookingId}`,
+    ipAddress,
+  });
+
+  return { paymentUrl, paymentId: payment._id.toString() };
+};
+
+/**
+ * Handle VNPay return/IPN callback: verify → update Payment + Booking
+ * @param {Object} query - Express req.query from VNPay callback
+ * @returns {Promise<{ isSuccess: boolean, paymentId: string|null, amount: number|null, message: string }>}
+ */
+const handleVnpayCallback = async (query) => {
+  const result = vnpayService.verifyReturnUrl(query);
+
+  if (!result.orderId) {
+    return { isSuccess: false, paymentId: null, amount: null, message: 'Missing order reference' };
+  }
+
+  const payment = await Payment.findById(result.orderId);
+  if (!payment) {
+    return { isSuccess: false, paymentId: result.orderId, amount: result.amount, message: 'Payment not found' };
+  }
+
+  // Idempotent: skip if already settled
+  if (payment.status === 'Success') {
+    return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'Already settled' };
+  }
+
+  if (!result.isSuccess) {
+    payment.status = 'Failed';
+    payment.transactionRef = result.transactionId || null;
+    payment.gatewayResponse = JSON.stringify(query);
+    await payment.save();
+    return { isSuccess: false, paymentId: payment._id.toString(), amount: result.amount, message: 'VNPay payment failed' };
+  }
+
+  // Success: update payment + booking
+  payment.status = 'Success';
+  payment.transactionRef = result.transactionId || null;
+  payment.gatewayResponse = JSON.stringify(query);
+  if (result.amount && result.amount > 0) {
+    payment.amount = result.amount;
+  }
+  await payment.save();
+
+  // Confirm booking
+  try {
+    await bookingService.updateStatus(payment.bookingId.toString(), 'Confirmed');
+  } catch {
+    // Booking may already be confirmed
+  }
+
+  return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'VNPay payment success' };
+};
+
+// ─── MoMo Integration ─────────────────────────────────────────────────
+
+/**
+ * Create MoMo payment: save Pending record → call MoMo API → return payUrl
+ * @param {Object} params
+ * @param {string} params.bookingId
+ * @param {string} params.userId
+ * @param {string} [params.fullName]
+ * @returns {Promise<{ payUrl: string|null, paymentId: string }>}
+ */
+const createMomoPayment = async ({ bookingId, userId, fullName }) => {
+  const booking = await bookingService.findById(bookingId);
+  const user = await userService.findById(userId);
+
+  const payment = await Payment.create({
+    bookingId,
+    userId,
+    amount: booking.totalPrice,
+    paymentMethod: 'MoMo',
+    status: 'Pending',
+  });
+
+  const customerName = fullName || user.fullName || 'Khách hàng';
+
+  const momoResult = await momoService.createPayment({
+    orderId: payment._id.toString(),
+    amount: booking.totalPrice,
+    orderInfo: `Thanh toan dat san ${bookingId}`,
+    fullName: customerName,
+  });
+
+  if (!momoResult.payUrl) {
+    payment.status = 'Failed';
+    payment.gatewayResponse = JSON.stringify(momoResult);
+    await payment.save();
+    throw new BadRequestError('Cannot create MoMo payment URL');
+  }
+
+  payment.transactionRef = momoResult.momoOrderId;
+  payment.gatewayResponse = JSON.stringify(momoResult);
+  await payment.save();
+
+  return { payUrl: momoResult.payUrl, paymentId: payment._id.toString() };
+};
+
+/**
+ * Handle MoMo callback: parse query → update Payment + Booking
+ * @param {Object} query - Express req.query from MoMo redirect
+ * @returns {Promise<{ isSuccess: boolean, paymentId: string|null, amount: string, message: string }>}
+ */
+const handleMomoCallback = async (query) => {
+  const result = momoService.verifyCallback(query);
+
+  if (!result.internalOrderId) {
+    return { isSuccess: false, paymentId: null, amount: result.amount, message: 'Cannot extract internal order ID' };
+  }
+
+  const payment = await Payment.findById(result.internalOrderId);
+  if (!payment) {
+    return { isSuccess: false, paymentId: result.internalOrderId, amount: result.amount, message: 'Payment not found' };
+  }
+
+  // Idempotent
+  if (payment.status === 'Success') {
+    return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'Already settled' };
+  }
+
+  const resultCode = query.resultCode ? Number(query.resultCode) : -1;
+  const isSuccess = resultCode === 0;
+
+  if (!isSuccess) {
+    payment.status = 'Failed';
+    payment.gatewayResponse = JSON.stringify(query);
+    await payment.save();
+    return { isSuccess: false, paymentId: payment._id.toString(), amount: result.amount, message: 'MoMo payment failed' };
+  }
+
+  payment.status = 'Success';
+  payment.transactionRef = result.momoOrderId;
+  payment.gatewayResponse = JSON.stringify(query);
+  if (result.amount) {
+    payment.amount = Number(result.amount);
+  }
+  await payment.save();
+
+  try {
+    await bookingService.updateStatus(payment.bookingId.toString(), 'Confirmed');
+  } catch {
+    // Booking may already be confirmed
+  }
+
+  return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'MoMo payment success' };
+};
+
+/**
+ * Handle MoMo IPN (notify): verify signature → confirm → update DB
+ * @param {Object} body - MoMo IPN request body
+ * @returns {Promise<{ isSuccess: boolean, message: string }>}
+ */
+const handleMomoIpn = async (body) => {
+  const isValidSignature = momoService.verifyIpnSignature(body);
+  if (!isValidSignature) {
+    return { isSuccess: false, message: 'Invalid signature' };
+  }
+
+  // Only process successful payments
+  if (body.resultCode !== 0) {
+    return { isSuccess: false, message: `MoMo resultCode: ${body.resultCode}` };
+  }
+
+  // Confirm with MoMo query API
+  const confirmResult = await momoService.confirmOrder(body);
+  if (!confirmResult.isSuccess) {
+    return { isSuccess: false, message: 'MoMo confirm failed' };
+  }
+
+  // Extract internal order ID
+  const internalOrderId = momoService.extractInternalOrderId(body);
+  if (!internalOrderId) {
+    return { isSuccess: false, message: 'Cannot extract internal order ID' };
+  }
+
+  const payment = await Payment.findById(internalOrderId);
+  if (!payment) {
+    return { isSuccess: false, message: 'Payment not found' };
+  }
+
+  // Idempotent
+  if (payment.status === 'Success') {
+    return { isSuccess: true, message: 'Already settled' };
+  }
+
+  payment.status = 'Success';
+  payment.transactionRef = body.orderId || null;
+  payment.gatewayResponse = JSON.stringify(body);
+  if (confirmResult.amount && confirmResult.amount > 0) {
+    payment.amount = confirmResult.amount;
+  }
+  await payment.save();
+
+  try {
+    await bookingService.updateStatus(payment.bookingId.toString(), 'Confirmed');
+  } catch {
+    // Booking may already be confirmed
+  }
+
+  return { isSuccess: true, message: 'MoMo IPN processed' };
+};
+
 module.exports = {
   create,
   findAll,
   findById,
   updateStatus,
+  createVnpayPayment,
+  handleVnpayCallback,
+  createMomoPayment,
+  handleMomoCallback,
+  handleMomoIpn,
 };

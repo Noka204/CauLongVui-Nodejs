@@ -27,10 +27,6 @@ const courtSchema = new mongoose.Schema({
     default: 'active',
     enum: ['active', 'deleted'],
   },
-  images: {
-    type: [String],
-    default: [],
-  },
 }, { timestamps: true });
 
 const Court = mongoose.model('Court', courtSchema);

@@ -6,6 +6,7 @@ const createCourtSchema = z.object({
     description: z.string().optional(),
     imageUrl: z.string().optional().nullable(),
     images: z.union([z.string(), z.array(z.string())]).optional(),
+    isMaintenance: z.boolean().optional(),
   }),
 });
 

@@ -15,7 +15,22 @@ const updatePaymentStatusSchema = z.object({
   }),
 });
 
+const createVnpaySchema = z.object({
+  body: z.object({
+    bookingId: z.string().regex(/^[0-9a-fA-F]{24}$/),
+  }),
+});
+
+const createMomoSchema = z.object({
+  body: z.object({
+    bookingId: z.string().regex(/^[0-9a-fA-F]{24}$/),
+    fullName: z.string().optional(),
+  }),
+});
+
 module.exports = {
   createPaymentSchema,
   updatePaymentStatusSchema,
+  createVnpaySchema,
+  createMomoSchema,
 };

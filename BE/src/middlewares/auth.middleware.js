@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const env = require('../config/env');
 const { UnauthorizedError } = require('../exceptions/UnauthorizedError');
 
@@ -36,4 +37,67 @@ const validateApiKey = (requiredType = 'public') => {
   };
 };
 
-module.exports = { validateApiKey };
+/**
+ * Middleware verifyToken: Xác thực JWT Access Token từ header Authorization
+ * Decode token → gán req.user = { id, roleId }
+ * Dùng cho các route cần biết user đang login (tạo booking, payment, review...)
+ */
+const verifyToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedError('Access token is required');
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      throw new UnauthorizedError('Access token is required');
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    req.user = {
+      id: decoded.id,
+      roleId: decoded.roleId,
+    };
+
+    return next();
+  } catch (error) {
+    if (error.name === 'JsonWebTokenError') {
+      return next(new UnauthorizedError('Invalid access token'));
+    }
+    if (error.name === 'TokenExpiredError') {
+      return next(new UnauthorizedError('Access token has expired'));
+    }
+    return next(error);
+  }
+};
+
+/**
+ * Middleware optionalToken: Decode JWT nếu có, không throw nếu không có
+ * Dùng cho route vừa cho phép ẩn danh vừa hỗ trợ user đã login
+ */
+const optionalToken = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, env.JWT_SECRET);
+    req.user = {
+      id: decoded.id,
+      roleId: decoded.roleId,
+    };
+  } catch {
+    // Token invalid/expired → treat as anonymous, don't throw
+  }
+
+  return next();
+};
+
+module.exports = { validateApiKey, verifyToken, optionalToken };

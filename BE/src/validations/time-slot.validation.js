@@ -4,8 +4,8 @@ const dayjs = require('dayjs');
 
 const createTimeSlotSchema = z.object({
   body: z.object({
-    startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid start time (HH:mm)'),
-    endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Invalid end time (HH:mm)'),
+    startTime: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, 'Invalid start time (HH:00 or HH:30)'),
+    endTime: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/, 'Invalid end time (HH:00 or HH:30)'),
     price: z.number().min(0),
     isPeakHour: z.boolean().optional(),
   }).refine((data) => {
