@@ -18,7 +18,9 @@ const errorMiddleware = (err, req, res, next) => {
   // Log error
   console.error(err);
 
-  return sendResponse(res, statusCode || 500, false, message, null, err.stack);
+  // Stack trace protection
+  const stackTrace = process.env.NODE_ENV === 'development' ? err.stack : undefined;
+  return sendResponse(res, statusCode || 500, false, message, null, stackTrace);
 };
 
 module.exports = errorMiddleware;

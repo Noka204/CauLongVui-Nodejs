@@ -18,10 +18,14 @@ const storage = multer.diskStorage({
 
 // File filter
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  // Strict check on actual extension
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ['.png', '.jpg', '.jpeg', '.webp'];
+
+  if (file.mimetype.startsWith('image/') && allowedExts.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new BadRequestError('Only images are allowed!'), false);
+    cb(new BadRequestError('Only valid image files (png, jpg, jpeg, webp) are allowed!'), false);
   }
 };
 

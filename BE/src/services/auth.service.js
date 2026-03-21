@@ -1,6 +1,7 @@
 const User = require('../models/user.model');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const env = require('../config/env');
 const { UnauthorizedError } = require('../exceptions/UnauthorizedError');
 const { BadRequestError } = require('../exceptions/BadRequestError');
 const roleService = require('./role.service');
@@ -18,14 +19,17 @@ const login = async (phoneNumber, password) => {
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) throw new UnauthorizedError('Invalid phone number or password');
 
+  const role = await roleService.findById(user.roleId);
+
   // Payload for JWT Token
   const payload = {
     id: user._id.toString(),
-    roleId: user.roleId.toString()
+    roleId: user.roleId.toString(),
+    roleName: role.roleName
   };
 
-  const JWT_SECRET = process.env.JWT_SECRET || 'CauLongVuiSecretKey2026';
-  const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'CauLongVuiRefreshKey2026';
+  const JWT_SECRET = env.JWT_SECRET;
+  const JWT_REFRESH_SECRET = env.JWT_REFRESH_SECRET;
 
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
   const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, { expiresIn: '7d' });

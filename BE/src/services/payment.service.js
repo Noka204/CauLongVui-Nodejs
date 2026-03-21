@@ -8,6 +8,7 @@ const vnpayService = require('./external/vnpay.service');
 const momoService = require('./external/momo.service');
 const VnPayLibrary = require('../utils/vnpay.lib');
 const { BadRequestError } = require('../exceptions/BadRequestError');
+const { ForbiddenError } = require('../exceptions/ForbiddenError');
 
 /**
  * Create a new payment record
@@ -24,25 +25,37 @@ const create = async (paymentData) => {
 /**
  * Find all payments with pagination
  * @param {Object} query
- * @param {number} [query.page=1]
- * @param {number} [query.limit=10]
+ * @param {Object} user
  * @returns {Promise<Object>}
  */
-const findAll = async ({ page = 1, limit = 10 }) => {
+const findAll = async (query = {}, user) => {
+  const { page = 1, limit = 10 } = query;
   const skip = (page - 1) * limit;
-  const items = await Payment.find().skip(skip).limit(limit);
-  const total = await Payment.countDocuments();
+
+  const filter = {};
+  if (user && user.roleName !== 'Admin') {
+    filter.userId = user.id;
+  }
+
+  const items = await Payment.find(filter).skip(skip).limit(limit);
+  const total = await Payment.countDocuments(filter);
   return { items, pagination: { page, limit, total } };
 };
 
 /**
  * Find payment by ID
  * @param {string} id
+ * @param {Object} user 
  * @returns {Promise<Object>}
  */
-const findById = async (id) => {
+const findById = async (id, user) => {
   const payment = await Payment.findById(id);
   if (!payment) throw new BadRequestError('Payment record not found');
+  
+  if (user && user.roleName !== 'Admin' && payment.userId.toString() !== user.id) {
+    throw new ForbiddenError('You are not authorized to access this payment');
+  }
+
   return payment;
 };
 

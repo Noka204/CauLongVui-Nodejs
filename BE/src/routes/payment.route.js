@@ -11,8 +11,8 @@ const {
 const { validateApiKey, verifyToken } = require('../middlewares/auth.middleware');
 
 // ─── CRUD cơ bản ──────────────────────────────────────────────────────
-router.get('/', paymentController.getPayments);
-router.get('/:id', paymentController.getPaymentById);
+router.get('/', verifyToken, paymentController.getPayments);
+router.get('/:id', verifyToken, paymentController.getPaymentById);
 router.post('/', verifyToken, validate(createPaymentSchema), paymentController.createPayment);
 router.patch('/:id/status', validateApiKey('secret'), validate(updatePaymentStatusSchema), paymentController.updatePaymentStatus);
 

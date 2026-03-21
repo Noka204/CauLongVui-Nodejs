@@ -6,6 +6,7 @@ const voucherService = require('./voucher.service');
 const courtService = require('./court.service');
 const userService = require('./user.service');
 const { BadRequestError } = require('../exceptions/BadRequestError');
+const { ForbiddenError } = require('../exceptions/ForbiddenError');
 
 const BOOKING_EXPIRY_MINUTES = 10;
 
@@ -79,23 +80,38 @@ const create = async (bookingData) => {
 /**
  * Find all bookings
  * @param {Object} query 
+ * @param {Object} user 
  * @returns {Promise<Object>}
  */
-const findAll = async ({ page = 1, limit = 10 }) => {
+const findAll = async (query = {}, user) => {
+  const { page = 1, limit = 10 } = query;
   const skip = (page - 1) * limit;
-  const items = await Booking.find().skip(skip).limit(limit);
-  const total = await Booking.countDocuments();
+  
+  // Filter by user unless Admin
+  const filter = {};
+  if (user && user.roleName !== 'Admin') {
+    filter.userId = user.id;
+  }
+
+  const items = await Booking.find(filter).skip(skip).limit(limit);
+  const total = await Booking.countDocuments(filter);
   return { items, pagination: { page, limit, total } };
 };
 
 /**
  * Find booking by ID
  * @param {string} id 
+ * @param {Object} user 
  * @returns {Promise<Object>}
  */
-const findById = async (id) => {
+const findById = async (id, user) => {
   const booking = await Booking.findById(id);
   if (!booking) throw new BadRequestError('Booking not found');
+  
+  if (user && user.roleName !== 'Admin' && booking.userId.toString() !== user.id) {
+    throw new ForbiddenError('You are not authorized to access this booking');
+  }
+
   return booking;
 };
 
@@ -122,22 +138,34 @@ const updateStatus = async (id, status) => {
  * Update booking information
  * @param {string} id 
  * @param {Object} updateData 
+ * @param {Object} user 
  * @returns {Promise<Object>}
  */
-const update = async (id, updateData) => {
-  const booking = await Booking.findByIdAndUpdate(id, updateData, { new: true });
+const update = async (id, updateData, user) => {
+  const booking = await Booking.findById(id);
   if (!booking) throw new BadRequestError('Booking not found');
-  return booking;
+
+  if (user && user.roleName !== 'Admin' && booking.userId.toString() !== user.id) {
+    throw new ForbiddenError('You are not authorized to update this booking');
+  }
+
+  const updatedBooking = await Booking.findByIdAndUpdate(id, updateData, { new: true });
+  return updatedBooking;
 };
 
 /**
  * Soft delete booking (kiểm tra ràng buộc trước khi xóa)
  * @param {string} id 
+ * @param {Object} user
  * @returns {Promise<void>}
  */
-const remove = async (id) => {
+const remove = async (id, user) => {
   const booking = await Booking.findById(id);
   if (!booking) throw new BadRequestError('Booking not found');
+
+  if (user && user.roleName !== 'Admin' && booking.userId.toString() !== user.id) {
+    throw new ForbiddenError('You are not authorized to delete this booking');
+  }
 
   // Không cho xóa nếu đã thanh toán thành công
   const hasPaidPayment = await Payment.countDocuments({

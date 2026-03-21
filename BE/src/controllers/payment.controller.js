@@ -9,13 +9,13 @@ const createPayment = async (req, res) => {
 };
 
 const getPayments = async (req, res) => {
-  const data = await paymentService.findAll(req.query);
+  const data = await paymentService.findAll(req.query, req.user);
   const items = data.items.map(paymentDto);
   return sendResponse(res, 200, true, 'Get payments success', { ...data, items });
 };
 
 const getPaymentById = async (req, res) => {
-  const payment = await paymentService.findById(req.params.id);
+  const payment = await paymentService.findById(req.params.id, req.user);
   return sendResponse(res, 200, true, 'Get payment detail success', paymentDto(payment));
 };
 

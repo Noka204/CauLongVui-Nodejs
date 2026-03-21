@@ -17,13 +17,13 @@ const createBooking = async (req, res) => {
 };
 
 const getBookings = async (req, res) => {
-  const data = await bookingService.findAll(req.query);
+  const data = await bookingService.findAll(req.query, req.user);
   const items = data.items.map(bookingDto);
   return sendResponse(res, 200, true, 'Get bookings success', { ...data, items });
 };
 
 const getBookingById = async (req, res) => {
-  const booking = await bookingService.findById(req.params.id);
+  const booking = await bookingService.findById(req.params.id, req.user);
   return sendResponse(res, 200, true, 'Get booking detail success', bookingDto(booking));
 };
 
@@ -34,12 +34,12 @@ const updateBookingStatus = async (req, res) => {
 };
 
 const updateBooking = async (req, res) => {
-  const booking = await bookingService.update(req.params.id, req.body);
+  const booking = await bookingService.update(req.params.id, req.body, req.user);
   return sendResponse(res, 200, true, 'Update booking success', bookingDto(booking));
 };
 
 const deleteBooking = async (req, res) => {
-  await bookingService.remove(req.params.id);
+  await bookingService.remove(req.params.id, req.user);
   return sendResponse(res, 200, true, 'Delete booking success');
 };
 

@@ -58,6 +58,7 @@ const verifyToken = (req, res, next) => {
     req.user = {
       id: decoded.id,
       roleId: decoded.roleId,
+      roleName: decoded.roleName,
     };
 
     return next();
@@ -92,6 +93,7 @@ const optionalToken = (req, res, next) => {
     req.user = {
       id: decoded.id,
       roleId: decoded.roleId,
+      roleName: decoded.roleName,
     };
   } catch {
     // Token invalid/expired → treat as anonymous, don't throw

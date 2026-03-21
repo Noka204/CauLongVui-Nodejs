@@ -8,9 +8,9 @@ const { validateApiKey, verifyToken } = require('../middlewares/auth.middleware'
 // Client tạo booking cần JWT token (để lấy userId)
 router.post('/', verifyToken, validate(createBookingSchema), bookingController.createBooking);
 
-// Xem booking: public key đủ (đã apply global)
-router.get('/', bookingController.getBookings);
-router.get('/:id', bookingController.getBookingById);
+// Xem booking: can JWT owner hoac Admin
+router.get('/', verifyToken, bookingController.getBookings);
+router.get('/:id', verifyToken, bookingController.getBookingById);
 
 // Update booking: cần JWT (chủ booking)
 router.put('/:id', verifyToken, validate(updateBookingSchema), bookingController.updateBooking);
