@@ -12,6 +12,9 @@ export const useLogin = (options = {}) => {
     onSuccess: (data) => {
       if (data?.token) {
         localStorage.setItem('token', data.token);
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
       }
       options.onSuccess?.(data);
     },
@@ -39,6 +42,7 @@ export const useLogout = (options = {}) => {
     mutationFn: authService.logout,
     onSuccess: () => {
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       options.onSuccess?.();
     },
     ...options,

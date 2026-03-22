@@ -27,8 +27,35 @@ const updateUserSchema = z.object({
   }),
 });
 
+const sendOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+  }),
+});
+
+const verifyOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    otpCode: z.string().length(6, 'OTP must be 6 digits'),
+    fullName: z.string().min(1, 'Full Name is required'),
+    phoneNumber: z.string().min(10, 'Phone number must be at least 10 characters').max(15),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+  }),
+});
+
+const loginWithEmailSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+  }),
+});
+
+
 module.exports = {
   createUserSchema,
   loginSchema,
   updateUserSchema,
+  sendOtpSchema,
+  verifyOtpSchema,
+  loginWithEmailSchema,
 };

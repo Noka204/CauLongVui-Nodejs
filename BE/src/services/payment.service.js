@@ -9,6 +9,7 @@ const momoService = require('./external/momo.service');
 const VnPayLibrary = require('../utils/vnpay.lib');
 const { BadRequestError } = require('../exceptions/BadRequestError');
 const { ForbiddenError } = require('../exceptions/ForbiddenError');
+const emailService = require('./external/email.service');
 
 /**
  * Create a new payment record
@@ -169,6 +170,18 @@ const handleVnpayCallback = async (query) => {
     throw error;
   }
 
+  // Send Booking Confirmation Email
+  try {
+    const user = await userService.findById(payment.userId);
+    const booking = await bookingService.findById(payment.bookingId);
+    if (user && user.email) {
+      booking.customerName = user.fullName;
+      await emailService.sendBookingConfirmationEmail(user.email, booking, { name: 'Hệ thống Cầu Lông Vui' });
+    }
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+  }
+
   return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'VNPay payment success' };
 };
 
@@ -278,6 +291,18 @@ const handleMomoCallback = async (query) => {
     throw error;
   }
 
+  // Send Booking Confirmation Email
+  try {
+    const user = await userService.findById(payment.userId);
+    const booking = await bookingService.findById(payment.bookingId);
+    if (user && user.email) {
+      booking.customerName = user.fullName;
+      await emailService.sendBookingConfirmationEmail(user.email, booking, { name: 'Hệ thống Cầu Lông Vui' });
+    }
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
+  }
+
   return { isSuccess: true, paymentId: payment._id.toString(), amount: result.amount, message: 'MoMo payment success' };
 };
 
@@ -351,6 +376,18 @@ const handleMomoIpn = async (body) => {
     await session.abortTransaction();
     session.endSession();
     throw error;
+  }
+
+  // Send Booking Confirmation Email
+  try {
+    const user = await userService.findById(payment.userId);
+    const booking = await bookingService.findById(payment.bookingId);
+    if (user && user.email) {
+      booking.customerName = user.fullName;
+      await emailService.sendBookingConfirmationEmail(user.email, booking, { name: 'Hệ thống Cầu Lông Vui' });
+    }
+  } catch (error) {
+    console.error('Error sending confirmation email:', error);
   }
 
   return { isSuccess: true, message: 'MoMo IPN processed' };

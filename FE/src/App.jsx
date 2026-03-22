@@ -12,6 +12,9 @@ import { useSocket } from './hooks/useSocket';
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
+import LoginEmail from './pages/LoginEmail';
+import RegisterEmail from './pages/RegisterEmail';
+import Profile from './pages/Profile';
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,9 @@ function App() {
         <Routes>
           {/* Public Landing Page */}
           <Route path="/" element={<MainLayout><Home /></MainLayout>} />
+          <Route path="/login" element={<MainLayout><LoginEmail /></MainLayout>} />
+          <Route path="/register" element={<MainLayout><RegisterEmail /></MainLayout>} />
+          <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
 
           {/* Admin Dashboard Routes */}
           <Route path="/admin" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
