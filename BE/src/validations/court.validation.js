@@ -6,7 +6,13 @@ const createCourtSchema = z.object({
     description: z.string().optional(),
     imageUrl: z.string().optional().nullable(),
     images: z.union([z.string(), z.array(z.string())]).optional(),
-    isMaintenance: z.boolean().optional(),
+    isMaintenance: z
+      .preprocess((val) => {
+        if (typeof val === 'string') return val === 'true';
+        return val;
+      }, z.boolean())
+      .optional()
+      .default(false),
   }),
 });
 
@@ -19,7 +25,12 @@ const updateCourtSchema = z.object({
     description: z.string().optional(),
     imageUrl: z.string().optional().nullable(),
     images: z.union([z.string(), z.array(z.string())]).optional(),
-    isMaintenance: z.string().transform(v => v === 'true').optional().or(z.boolean().optional()),
+    isMaintenance: z
+      .preprocess((val) => {
+        if (typeof val === 'string') return val === 'true';
+        return val;
+      }, z.boolean())
+      .optional(),
   }),
 });
 

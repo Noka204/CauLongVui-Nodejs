@@ -6,6 +6,7 @@ import CourtForm from '../components/CourtForm';
 export default function Courts() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState(null);
+  const [viewMode, setViewMode] = useState('table'); // 'table' hoặc 'grid'
 
   const { data, isLoading, isError } = useCourts();
 
@@ -53,10 +54,34 @@ export default function Courts() {
           <h1 className="text-3xl font-black tracking-tight text-slate-900 uppercase">Danh sách sân đấu</h1>
           <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">QUẢN LÝ THÔNG TIN & TRẠNG THÁI SÂN</p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} aria-label="Thêm sân đấu mới">THÊM SÂN MỚI</Button>
+        <div className="flex items-center gap-4">
+          {/* Nút chuyển đổi giao diện */}
+          <div className="flex bg-slate-100 p-1 rounded-xl">
+            <button 
+              onClick={() => setViewMode('table')}
+              className={clsx(
+                "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                viewMode === 'table' ? "bg-white text-teal-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              BẢNG
+            </button>
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={clsx(
+                "px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all",
+                viewMode === 'grid' ? "bg-white text-teal-600 shadow-sm" : "text-slate-400 hover:text-slate-600"
+              )}
+            >
+              LƯỚI
+            </button>
+          </div>
+          <Button onClick={() => setIsFormOpen(true)} aria-label="Thêm sân đấu mới">THÊM SÂN MỚI</Button>
+        </div>
       </header>
 
-      <section className="bento-card overflow-hidden !p-0" aria-label="Bảng danh sách sân đấu">
+      {viewMode === 'table' ? (
+        <section className="bento-card overflow-hidden !p-0" aria-label="Bảng danh sách sân đấu">
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-50/50 border-b border-slate-100">
@@ -124,6 +149,55 @@ export default function Courts() {
           </tbody>
         </table>
       </section>
+      ) : (
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {courts.length === 0 ? (
+            <div className="col-span-full bento-card py-12 text-center text-[10px] font-black text-slate-300 uppercase italic">
+              Chưa có sân đấu nào
+            </div>
+          ) : courts.map((court) => (
+            <article key={court.id} className="bento-card group hover:scale-[1.02] transition-transform flex flex-col gap-4">
+              <div className="aspect-video rounded-xl bg-slate-100 overflow-hidden relative">
+                {court.imageUrl ? (
+                  <img src={`http://localhost:5000${court.imageUrl}`} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-300 uppercase italic">NO IMAGE</div>
+                )}
+                <span className={clsx(
+                  "absolute top-3 right-3 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter shadow-sm",
+                  court.isMaintenance ? "bg-red-500 text-white" : "bg-teal-500 text-white"
+                )}>
+                  {court.isMaintenance ? 'BẢO TRÌ' : 'HOẠT ĐỘNG'}
+                </span>
+              </div>
+              
+              <div className="flex-1 flex flex-col gap-1">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">{court.courtName}</h3>
+                <p className="text-[10px] font-bold text-slate-400 line-clamp-2 uppercase leading-relaxed">
+                  {court.description || 'CHƯA CÓ MÔ TẢ CHO SÂN ĐẤU NÀY...'}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                <button 
+                  onClick={() => handleEdit(court)}
+                  className="text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-widest"
+                >
+                  CHI TIẾT / SỬA
+                </button>
+                <button 
+                  onClick={() => {
+                    if(confirm('XÁC NHẬN XÓA SÂN NÀY?')) deleteMutation.mutate(court.id);
+                  }}
+                  className="text-[10px] font-black text-slate-300 hover:text-red-500 uppercase tracking-widest"
+                >
+                  XÓA
+                </button>
+              </div>
+            </article>
+          ))}
+        </section>
+      )}
 
       {isFormOpen && (
         <CourtForm 

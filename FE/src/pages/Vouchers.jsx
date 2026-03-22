@@ -70,11 +70,11 @@ export default function Vouchers() {
             ) : vouchers.map((v) => (
               <tr key={v.id} className="hover:bg-slate-50/30 transition-colors group">
                 <td className="px-6 py-4">
-                  <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{v.code}</p>
+                  <p className="text-xs font-black text-slate-900 uppercase tracking-tight">{v.voucherCode}</p>
                 </td>
                 <td className="px-6 py-4">
-                  <p className="text-xs font-bold text-slate-900">{v.discountType === 'Percentage' ? `${v.discountValue}%` : `${v.discountValue} VND`}</p>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">ĐK: ≥ {v.minBookingValue} VND</p>
+                  <p className="text-xs font-bold text-slate-900">{v.discountType === 'Percentage' ? `${v.discountValue}%` : `${v.discountValue.toLocaleString()} VND`}</p>
+                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase">ĐK: ≥ {v.minOrderValue?.toLocaleString()} VND</p>
                 </td>
                 <td className="px-6 py-4 text-center">
                   <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tighter ${v.isActive ? 'bg-teal-50 text-teal-600' : 'bg-red-50 text-red-600'}`}>

@@ -19,9 +19,15 @@ export default function VoucherForm({ onSubmit, initialData, onCancel }) {
   useEffect(() => {
     if (initialData) {
       setFormData({
-        ...initialData,
+        code: initialData.voucherCode || '',
+        discountType: initialData.discountType || 'Percentage',
+        discountValue: initialData.discountValue || '',
+        minBookingValue: initialData.minOrderValue || '',
+        maxDiscountAmount: initialData.maxDiscount || '',
         startDate: initialData.startDate ? new Date(initialData.startDate).toISOString().split('T')[0] : '',
         endDate: initialData.endDate ? new Date(initialData.endDate).toISOString().split('T')[0] : '',
+        quantity: initialData.usageLimit || '',
+        isActive: initialData.isActive ?? true,
       });
     }
   }, [initialData]);
@@ -45,11 +51,15 @@ export default function VoucherForm({ onSubmit, initialData, onCancel }) {
 
     try {
       const payload = {
-        ...formData,
+        voucherCode: formData.code.toUpperCase(),
+        discountType: formData.discountType,
         discountValue: Number(formData.discountValue),
-        minBookingValue: Number(formData.minBookingValue),
-        maxDiscountAmount: formData.maxDiscountAmount ? Number(formData.maxDiscountAmount) : null,
-        quantity: Number(formData.quantity)
+        minOrderValue: Number(formData.minBookingValue),
+        maxDiscount: formData.maxDiscountAmount ? Number(formData.maxDiscountAmount) : null,
+        usageLimit: Number(formData.quantity),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        isActive: formData.isActive
       };
 
       await onSubmit(payload);

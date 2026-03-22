@@ -3,11 +3,11 @@ import { Link, useLocation } from 'react-router-dom';
 import { clsx } from 'clsx';
 
 const MENU_ITEMS = [
-  { label: 'TỔNG QUAN', path: '/' },
-  { label: 'SÂN ĐẤU', path: '/courts' },
-  { label: 'ĐẶT CHỖ', path: '/bookings' },
-  { label: 'VOUCHER', path: '/vouchers' },
-  { label: 'NGƯỜI DÙNG', path: '/users' },
+  { label: 'TỔNG QUAN', path: '/admin' },
+  { label: 'SÂN ĐẤU', path: '/admin/courts' },
+  { label: 'ĐẶT CHỖ', path: '/admin/bookings' },
+  { label: 'VOUCHER', path: '/admin/vouchers' },
+  { label: 'NGƯỜI DÙNG', path: '/admin/users' },
 ];
 
 export default function DashboardLayout({ children }) {
@@ -51,7 +51,13 @@ export default function DashboardLayout({ children }) {
           </ul>
         </nav>
 
-        <section className="p-4 border-t border-slate-50">
+        <section className="p-4 border-t border-slate-50 space-y-4">
+          <Link 
+            to="/" 
+            className="flex items-center gap-2 px-4 py-2 text-[10px] font-black text-slate-400 hover:text-teal-600 uppercase tracking-widest transition-colors"
+          >
+            ← QUAY LẠI TRANG CHỦ
+          </Link>
           <article className="bg-slate-50 p-4 rounded-2xl">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Hệ thống</p>
             <p className="text-xs font-bold text-slate-900 mt-1">● TRỰC TUYẾN</p>
