@@ -11,6 +11,7 @@ const userDto = (user) => {
     phoneNumber: user.phoneNumber,
     email: user.email,
     roleId: user.roleId,
+    status: user.status,
     avatar: user.avatar || '/uploads/images/defaul.png',
     balance: user.balance || 0,
     createdAt: user.createdAt,

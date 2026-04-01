@@ -1,20 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLogout } from '../hooks/useAuth';
+import { buildUserWithRoleFromToken } from '../utils/auth.utils';
 
 export default function MainLayout({ children }) {
   const [user, setUser] = useState(null);
   const { mutate: logout } = useLogout();
   const navigate = useNavigate();
+  const isAdmin = user?.roleName === 'Admin';
 
   useEffect(() => {
     const checkUser = () => {
       const savedUser = localStorage.getItem('user');
+      const token = localStorage.getItem('token') || '';
       if (savedUser) {
         try {
-          setUser(JSON.parse(savedUser));
-        } catch (e) {
+          const parsedUser = JSON.parse(savedUser);
+          const normalizedUser = buildUserWithRoleFromToken(parsedUser, token);
+          setUser(normalizedUser);
+          localStorage.setItem('user', JSON.stringify(normalizedUser));
+        } catch {
           console.error('Lỗi parse thông tin user');
+          setUser(null);
         }
       } else {
         setUser(null);
@@ -50,9 +57,11 @@ export default function MainLayout({ children }) {
         </div>
 
         <div className="flex items-center gap-4">
-          <Link to="/admin" className="text-xs font-black px-5 py-2.5 rounded-xl border-2 border-slate-100 hover:border-teal-600 hover:text-teal-600 transition-all uppercase tracking-widest hidden sm:block">
-            Quản trị
-          </Link>
+          {isAdmin && (
+            <Link to="/admin" className="text-xs font-black px-5 py-2.5 rounded-xl border-2 border-slate-100 hover:border-teal-600 hover:text-teal-600 transition-all uppercase tracking-widest hidden sm:block">
+              Quản trị
+            </Link>
+          )}
           {user ? (
             <div className="flex items-center gap-3">
                <Link to="/profile" className="flex items-center gap-2 hover:bg-slate-50 p-2 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-slate-200">

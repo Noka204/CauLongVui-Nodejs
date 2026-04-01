@@ -2,10 +2,24 @@ import axios from 'axios';
 
 /**
  * Centralized Axios instance for CauLongVui API.
- * Base URL: http://localhost:5000/api/v1
+ * Base URL can be configured via VITE_API_URL.
  */
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+const API_PUBLIC_KEY = import.meta.env.VITE_API_PUBLIC_KEY || 'local_public_key';
+const API_SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY || 'local_secret_key';
+
+export const getApiBaseUrl = () => API_BASE_URL;
+
+export const getApiOrigin = () => {
+  try {
+    return new URL(API_BASE_URL).origin;
+  } catch {
+    return 'http://localhost:5001';
+  }
+};
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:5000/api/v1',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -14,18 +28,22 @@ const apiClient = axios.create({
 
 /**
  * Request Interceptor
- * Gắn x-api-public-key mặc định, và x-api-secret-key nếu có cấu hình cho Admin.
+ * - Attach API keys for gateway validation
+ * - Attach Bearer token for authenticated endpoints (bookings, profile, etc.)
  */
 apiClient.interceptors.request.use(
   (config) => {
-    config.headers['x-api-public-key'] = import.meta.env.VITE_API_PUBLIC_KEY;
-    
-    // Bypass: Nếu có Secret Key trong env, nhét luôn vào để cho phép test các Admin Endpoints
-    const secretKey = import.meta.env.VITE_API_SECRET_KEY;
-    if (secretKey) {
-      config.headers['x-api-secret-key'] = secretKey;
+    config.headers['x-api-public-key'] = API_PUBLIC_KEY;
+
+    if (API_SECRET_KEY) {
+      config.headers['x-api-secret-key'] = API_SECRET_KEY;
     }
-    
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -33,15 +51,14 @@ apiClient.interceptors.request.use(
 
 /**
  * Response Interceptor
- * - Nếu `success: true` → Trả về response bình thường.
- * - Nếu `success: false` → Ném lỗi với cấu trúc { message, details, code, status }.
+ * - If backend returns success: false => normalize to a rejected custom error
+ * - If network/server throws => normalize error shape for FE forms
  */
 apiClient.interceptors.response.use(
   (response) => {
-    // Backend luôn trả về { success, message, data }
     if (response.data && response.data.success === false) {
       return Promise.reject({
-        message: response.data.message || 'THAO TÁC THẤT BẠI',
+        message: response.data.message || 'THAO TAC THAT BAI',
         details: response.data.error?.details || [],
         code: response.data.error?.code || 'UNKNOWN',
         status: response.status,
@@ -51,7 +68,7 @@ apiClient.interceptors.response.use(
   },
   (error) => {
     const customError = {
-      message: error.response?.data?.message || 'LỖI KẾT NỐI SERVER',
+      message: error.response?.data?.message || 'LOI KET NOI SERVER',
       details: error.response?.data?.error?.details || [],
       code: error.response?.data?.error?.code || 'NETWORK_ERROR',
       status: error.response?.status || 500,

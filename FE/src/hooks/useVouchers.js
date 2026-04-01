@@ -6,10 +6,10 @@ const QUERY_KEY = ['vouchers'];
 /**
  * Hook: Lấy danh sách voucher.
  */
-export const useVouchers = () => {
+export const useVouchers = (params = {}) => {
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: voucherService.getVouchers,
+    queryKey: [...QUERY_KEY, params],
+    queryFn: () => voucherService.getVouchers(params),
   });
 };
 

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { io } from 'socket.io-client';
 import { useQueryClient } from '@tanstack/react-query';
+import { getApiOrigin } from '../services/api.client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || getApiOrigin();
 
 /**
  * Custom hook to manage socket.io connection and real-time events.
- * @returns {{ socket: Object|null, joinCourt: Function, leaveCourt: Function, holdSlot: Function, unholdSlot: Function }}
+ * @returns {{ joinCourt: Function, leaveCourt: Function, holdSlot: Function, unholdSlot: Function }}
  */
 export const useSocket = () => {
   const socketRef = useRef(null);
@@ -106,7 +107,6 @@ export const useSocket = () => {
   }, []);
 
   return {
-    socket: socketRef.current,
     joinCourt,
     leaveCourt,
     holdSlot,

@@ -36,12 +36,12 @@ const bookingSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    default: 'Pending',
-    enum: ['Pending', 'Confirmed', 'Cancelled'],
+    default: 'Confirmed',
+    enum: ['Pending', 'Confirmed', 'Cancelled', 'Expired'],
   },
 }, { timestamps: true });
 
-// Double-booking check: courtId + slotId + bookingDate (Unique for non-cancelled)
+// Double-booking check: courtId + slotId + bookingDate (Unique for active statuses)
 bookingSchema.index(
   { courtId: 1, slotId: 1, bookingDate: 1 },
   { 

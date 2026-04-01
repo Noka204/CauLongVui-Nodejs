@@ -4,8 +4,8 @@ import apiClient from './api.client';
  * Lấy danh sách voucher.
  * @returns {Promise<object>}
  */
-export const getVouchers = async () => {
-  const { data } = await apiClient.get('/vouchers');
+export const getVouchers = async (params = {}) => {
+  const { data } = await apiClient.get('/vouchers', { params });
   return data.data;
 };
 

@@ -52,7 +52,7 @@ const watchBookingChanges = () => {
         const newStatus = change.updateDescription.updatedFields.status;
         if (newStatus === 'Confirmed') {
           socketService.emitToCourt(courtId, 'slot:confirmed', payload);
-        } else if (newStatus === 'Cancelled') {
+        } else if (newStatus === 'Cancelled' || newStatus === 'Expired') {
           socketService.emitToCourt(courtId, 'slot:released', {
             ...payload,
             reason: 'status_change',
@@ -71,7 +71,7 @@ const watchBookingChanges = () => {
 
 /**
  * Watch PendingExpiry collection for TTL deletions
- * When MongoDB TTL deletes a PendingExpiry → cancel the related booking
+ * When MongoDB TTL deletes a PendingExpiry → expire the related booking
  */
 const watchPendingExpiryDeletions = () => {
   const pipeline = [
@@ -87,15 +87,15 @@ const watchPendingExpiryDeletions = () => {
   changeStream.on('change', async (change) => {
     try {
       // TTL delete không cung cấp fullDocument, chỉ có _id
-      // Ta cần tìm booking Pending còn lại và cancel chúng
+      // Ta cần tìm booking Pending còn lại và expire chúng
       // Cách tiếp cận tối ưu: tìm tất cả booking Pending không còn PendingExpiry
       const pendingBookings = await Booking.find({ status: 'Pending' });
 
       for (const booking of pendingBookings) {
         const hasExpiry = await PendingExpiry.findOne({ bookingId: booking._id });
         if (!hasExpiry) {
-          // PendingExpiry đã bị TTL xóa → cancel booking
-          booking.status = 'Cancelled';
+          // PendingExpiry đã bị TTL xóa → expire booking (không phải user hủy)
+          booking.status = 'Expired';
           await booking.save();
           // Socket emit sẽ được trigger bởi watchBookingChanges ở trên
         }

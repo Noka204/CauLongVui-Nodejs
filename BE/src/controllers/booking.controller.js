@@ -22,6 +22,11 @@ const getBookings = async (req, res) => {
   return sendResponse(res, 200, true, 'Get bookings success', { ...data, items });
 };
 
+const getBookedSlotsByCourtAndDate = async (req, res) => {
+  const data = await bookingService.findBookedSlotsByCourtDate(req.query);
+  return sendResponse(res, 200, true, 'Get booked slots success', data);
+};
+
 const getBookingById = async (req, res) => {
   const booking = await bookingService.findById(req.params.id, req.user);
   return sendResponse(res, 200, true, 'Get booking detail success', bookingDto(booking));
@@ -46,6 +51,7 @@ const deleteBooking = async (req, res) => {
 module.exports = {
   createBooking,
   getBookings,
+  getBookedSlotsByCourtAndDate,
   getBookingById,
   updateBookingStatus,
   updateBooking,

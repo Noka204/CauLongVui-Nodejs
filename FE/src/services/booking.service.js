@@ -4,8 +4,21 @@ import apiClient from './api.client';
  * Lấy danh sách toàn bộ booking.
  * @returns {Promise<object>} { items, pagination }
  */
-export const getBookings = async () => {
-  const { data } = await apiClient.get('/bookings');
+export const getBookings = async (params = {}) => {
+  const { data } = await apiClient.get('/bookings', { params });
+  return data.data;
+};
+
+/**
+ * Get booked slot ids for a specific court and date.
+ * @param {string} courtId
+ * @param {string} bookingDate - YYYY-MM-DD
+ * @returns {Promise<{ courtId: string, bookingDate: string, bookedSlotIds: string[] }>}
+ */
+export const getBookedSlotsAvailability = async (courtId, bookingDate) => {
+  const { data } = await apiClient.get('/bookings/availability', {
+    params: { courtId, bookingDate },
+  });
   return data.data;
 };
 
@@ -44,7 +57,7 @@ export const updateBooking = async (id, bookingData) => {
 /**
  * Cập nhật trạng thái booking.
  * @param {string} id
- * @param {'Pending' | 'Confirmed' | 'Cancelled'} status
+ * @param {'Pending' | 'Confirmed' | 'Cancelled' | 'Expired'} status
  * @returns {Promise<object>} BookingDTO
  */
 export const updateBookingStatus = async (id, status) => {

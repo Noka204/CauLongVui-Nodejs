@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import * as authService from '../services/auth.service';
+import { buildUserWithRoleFromToken } from '../utils/auth.utils';
 
 /**
  * Hook: Đăng nhập.
@@ -10,10 +11,12 @@ export const useLogin = (options = {}) => {
   return useMutation({
     mutationFn: authService.login,
     onSuccess: (data) => {
-      if (data?.token) {
-        localStorage.setItem('token', data.token);
+      const accessToken = data?.tokens?.accessToken || data?.token;
+      if (accessToken) {
+        localStorage.setItem('token', accessToken);
         if (data.user) {
-          localStorage.setItem('user', JSON.stringify(data.user));
+          const userWithRole = buildUserWithRoleFromToken(data.user, accessToken);
+          localStorage.setItem('user', JSON.stringify(userWithRole));
         }
       }
       options.onSuccess?.(data);

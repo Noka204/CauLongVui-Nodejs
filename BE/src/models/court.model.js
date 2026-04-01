@@ -10,6 +10,11 @@ const courtSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  basePrice: {
+    type: Number,
+    min: 0,
+    default: 80000,
+  },
   images: {
     type: [String],
     default: [],

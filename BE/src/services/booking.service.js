@@ -8,8 +8,6 @@ const userService = require('./user.service');
 const { BadRequestError } = require('../exceptions/BadRequestError');
 const { ForbiddenError } = require('../exceptions/ForbiddenError');
 
-const BOOKING_EXPIRY_MINUTES = 10;
-
 /**
  * Create a new booking
  * @param {Object} bookingData 
@@ -36,7 +34,7 @@ const create = async (bookingData) => {
     courtId: bookingData.courtId,
     slotId: bookingData.slotId,
     bookingDate: { $gte: startOfDay, $lte: endOfDay },
-    status: { $ne: 'Cancelled' },
+    status: { $in: ['Pending', 'Confirmed'] },
   });
 
   if (existingBooking) {
@@ -71,15 +69,12 @@ const create = async (bookingData) => {
 
   bookingData.totalPrice = totalPrice;
   bookingData.discountAmount = discountAmount;
+  bookingData.status = 'Confirmed';
 
   const booking = await Booking.create(bookingData);
 
-  // Tạo PendingExpiry → MongoDB TTL sẽ tự xóa sau 10 phút
-  // Khi xóa → Change Stream bắt event → auto-cancel booking
-  const expireAt = new Date(Date.now() + BOOKING_EXPIRY_MINUTES * 60 * 1000);
-  await PendingExpiry.create({ bookingId: booking._id, expireAt });
-
-  // Socket emit sẽ được xử lý bởi Change Stream watcher (không cần emit thủ công)
+  // Booking xac nhan ngay, khong can cho admin duyet.
+  // Socket emit se duoc xu ly boi Change Stream watcher.
 
   return booking;
 };
@@ -103,6 +98,33 @@ const findAll = async (query = {}, user) => {
   const items = await Booking.find(filter).skip(skip).limit(limit);
   const total = await Booking.countDocuments(filter);
   return { items, pagination: { page, limit, total } };
+};
+
+/**
+ * Find booked slot ids by court and date (active bookings only)
+ * @param {{ courtId: string, bookingDate: string }} params
+ * @returns {Promise<{ courtId: string, bookingDate: Date, bookedSlotIds: string[] }>}
+ */
+const findBookedSlotsByCourtDate = async ({ courtId, bookingDate }) => {
+  const inputDate = new Date(bookingDate);
+  const startOfDay = new Date(Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth(), inputDate.getUTCDate(), 0, 0, 0, 0));
+  const endOfDay = new Date(Date.UTC(inputDate.getUTCFullYear(), inputDate.getUTCMonth(), inputDate.getUTCDate(), 23, 59, 59, 999));
+
+  const items = await Booking.find({
+    courtId,
+    bookingDate: { $gte: startOfDay, $lte: endOfDay },
+    status: { $in: ['Pending', 'Confirmed'] },
+  })
+    .select('slotId')
+    .lean();
+
+  const bookedSlotIds = items.map((item) => item.slotId.toString());
+
+  return {
+    courtId,
+    bookingDate: startOfDay,
+    bookedSlotIds,
+  };
 };
 
 /**
@@ -196,6 +218,7 @@ const remove = async (id, user) => {
 module.exports = {
   create,
   findAll,
+  findBookedSlotsByCourtDate,
   findById,
   updateStatus,
   update,

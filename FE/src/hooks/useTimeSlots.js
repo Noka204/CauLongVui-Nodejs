@@ -1,37 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as userService from '../services/user.service';
+import * as timeSlotService from '../services/time-slot.service';
 
-const QUERY_KEY = ['users'];
+const QUERY_KEY = ['time-slots'];
 
-/**
- * Hook: Lấy danh sách người dùng.
- */
-export const useUsers = (params = {}) => {
+export const useTimeSlots = () => {
   return useQuery({
-    queryKey: [...QUERY_KEY, params],
-    queryFn: () => userService.getUsers(params),
+    queryKey: QUERY_KEY,
+    queryFn: timeSlotService.getTimeSlots,
   });
 };
 
-/**
- * Hook: Lấy chi tiết người dùng.
- * @param {string} id
- */
-export const useUserDetail = (id) => {
+export const useTimeSlotDetail = (id) => {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
-    queryFn: () => userService.getUserById(id),
+    queryFn: () => timeSlotService.getTimeSlotById(id),
     enabled: !!id,
   });
 };
 
-/**
- * Hook: Tạo người dùng mới.
- */
-export const useCreateUser = (options = {}) => {
+export const useCreateTimeSlot = (options = {}) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: userService.createUser,
+    mutationFn: timeSlotService.createTimeSlot,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       options.onSuccess?.(data);
@@ -40,13 +30,10 @@ export const useCreateUser = (options = {}) => {
   });
 };
 
-/**
- * Hook: Cập nhật người dùng.
- */
-export const useUpdateUser = (options = {}) => {
+export const useUpdateTimeSlot = (options = {}) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }) => userService.updateUser(id, data),
+    mutationFn: ({ id, data }) => timeSlotService.updateTimeSlot(id, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       options.onSuccess?.(data);
@@ -55,13 +42,10 @@ export const useUpdateUser = (options = {}) => {
   });
 };
 
-/**
- * Hook: Xóa người dùng.
- */
-export const useDeleteUser = (options = {}) => {
+export const useDeleteTimeSlot = (options = {}) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: userService.deleteUser,
+    mutationFn: timeSlotService.deleteTimeSlot,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       options.onSuccess?.();

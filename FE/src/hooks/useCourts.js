@@ -7,10 +7,10 @@ const QUERY_KEY = ['courts'];
  * Hook: Lấy danh sách sân đấu.
  * Trả về { data, isLoading, isError, error, refetch }.
  */
-export const useCourts = () => {
+export const useCourts = (params = {}) => {
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: courtService.getCourts,
+    queryKey: [...QUERY_KEY, params],
+    queryFn: () => courtService.getCourts(params),
   });
 };
 

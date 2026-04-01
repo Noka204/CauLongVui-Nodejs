@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest --runInBand --detectOpenHandles"
+    "test": "jest --runInBand --detectOpenHandles",
+    "promote:admin": "node src/scripts/promote-user-admin.js",
+    "seed:roles": "node src/seeds/role.seed.js",
+    "seed:timeslots": "node src/seeds/time-slot.seed.js"
   },
   "keywords": [],
   "author": "",

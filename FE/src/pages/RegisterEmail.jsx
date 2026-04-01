@@ -3,6 +3,28 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { sendOtp, verifyOtp } from '../services/auth.service';
 
+const normalizeRegisterErrorMessage = (message) => {
+  if (!message) return 'Dang ky that bai. Kiem tra lai OTP hoac thong tin.';
+
+  if (message.includes('Customer role not configured')) {
+    return 'He thong chua cau hinh quyen Customer. Vui long lien he quan tri vien.';
+  }
+
+  if (message.includes('Invalid or expired OTP')) {
+    return 'Ma OTP khong dung hoac da het han.';
+  }
+
+  if (message.includes('Phone number already exists')) {
+    return 'So dien thoai da ton tai.';
+  }
+
+  if (message.includes('Email already registered')) {
+    return 'Email da duoc dang ky.';
+  }
+
+  return message;
+};
+
 export default function RegisterEmail() {
   const [step, setStep] = useState(1); // 1: Email, 2: OTP & Info
   const [email, setEmail] = useState('');
@@ -63,7 +85,7 @@ export default function RegisterEmail() {
       alert('Đăng ký thành công! Vui lòng đăng nhập.');
       navigate('/login');
     } catch (error) {
-      setErrorMsg(error.message || 'Đăng ký thất bại. Kiểm tra lại OTP hoặc thông tin.');
+      setErrorMsg(normalizeRegisterErrorMessage(error.message));
     }
   };
 

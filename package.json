@@ -1,0 +1,11 @@
+{
+  "name": "caulongvui-nodejs",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix BE start",
+    "dev": "npm --prefix BE run dev",
+    "dev:be": "npm --prefix BE run dev",
+    "dev:fe": "npm --prefix FE run dev",
+    "test:be": "npm --prefix BE test"
+  }
+}

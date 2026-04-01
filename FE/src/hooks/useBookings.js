@@ -4,18 +4,18 @@ import * as bookingService from '../services/booking.service';
 const QUERY_KEY = ['bookings'];
 
 /**
- * Hook: Lấy danh sách booking.
+ * Hook: Get booking list
  */
-export const useBookings = () => {
+export const useBookings = (params = {}, options = {}) => {
   return useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: bookingService.getBookings,
+    queryKey: [...QUERY_KEY, params],
+    queryFn: () => bookingService.getBookings(params),
+    ...options,
   });
 };
 
 /**
- * Hook: Lấy chi tiết booking.
- * @param {string} id
+ * Hook: Get booking detail
  */
 export const useBookingDetail = (id) => {
   return useQuery({
@@ -26,8 +26,18 @@ export const useBookingDetail = (id) => {
 };
 
 /**
- * Hook: Tạo booking mới.
- * bookingDate phải đúng format YYYY-MM-DD.
+ * Hook: Get booked slots by court and date
+ */
+export const useBookingAvailability = (courtId, bookingDate) => {
+  return useQuery({
+    queryKey: ['booking-availability', courtId, bookingDate],
+    queryFn: () => bookingService.getBookedSlotsAvailability(courtId, bookingDate),
+    enabled: !!courtId && !!bookingDate,
+  });
+};
+
+/**
+ * Hook: Create booking
  */
 export const useCreateBooking = (options = {}) => {
   const queryClient = useQueryClient();
@@ -35,6 +45,7 @@ export const useCreateBooking = (options = {}) => {
     mutationFn: bookingService.createBooking,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['booking-availability'] });
       options.onSuccess?.(data);
     },
     onError: options.onError,
@@ -42,7 +53,7 @@ export const useCreateBooking = (options = {}) => {
 };
 
 /**
- * Hook: Cập nhật booking.
+ * Hook: Update booking
  */
 export const useUpdateBooking = (options = {}) => {
   const queryClient = useQueryClient();
@@ -50,6 +61,7 @@ export const useUpdateBooking = (options = {}) => {
     mutationFn: ({ id, data }) => bookingService.updateBooking(id, data),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['booking-availability'] });
       options.onSuccess?.(data);
     },
     onError: options.onError,
@@ -57,7 +69,7 @@ export const useUpdateBooking = (options = {}) => {
 };
 
 /**
- * Hook: Cập nhật trạng thái booking (Pending → Confirmed → Cancelled).
+ * Hook: Update booking status
  */
 export const useUpdateBookingStatus = (options = {}) => {
   const queryClient = useQueryClient();
@@ -65,6 +77,7 @@ export const useUpdateBookingStatus = (options = {}) => {
     mutationFn: ({ id, status }) => bookingService.updateBookingStatus(id, status),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['booking-availability'] });
       options.onSuccess?.(data);
     },
     onError: options.onError,
@@ -72,7 +85,7 @@ export const useUpdateBookingStatus = (options = {}) => {
 };
 
 /**
- * Hook: Xóa booking.
+ * Hook: Delete booking
  */
 export const useDeleteBooking = (options = {}) => {
   const queryClient = useQueryClient();
@@ -80,6 +93,7 @@ export const useDeleteBooking = (options = {}) => {
     mutationFn: bookingService.deleteBooking,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['booking-availability'] });
       options.onSuccess?.();
     },
     onError: options.onError,

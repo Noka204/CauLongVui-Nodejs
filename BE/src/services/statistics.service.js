@@ -1,7 +1,7 @@
 const Booking = require('../models/booking.model');
 const Payment = require('../models/payment.model');
 const User = require('../models/user.model');
-const mongoose = require('mongoose');
+const Court = require('../models/court.model');
 
 /**
  * Get revenue grouped by month for a given year
@@ -76,30 +76,56 @@ const getTopCourts = async (limit = 5) => {
 
 /**
  * Get system overview counters
- * @returns {Promise<Object>} - { totalUsers, totalBookings, totalRevenue, todayBookings }
+ * @returns {Promise<Object>} - {
+ *   totalUsers, newUsers24h,
+ *   totalBookings, todayBookings,
+ *   totalRevenue,
+ *   totalCourts, activeCourts, maintenanceCourts
+ * }
  */
 const getOverview = async () => {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
+  const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalUsers, totalBookings, revenueResult, todayBookings] = await Promise.all([
+  const [
+    totalUsers,
+    newUsers24h,
+    totalBookings,
+    revenueResult,
+    todayBookings,
+    totalCourts,
+    maintenanceCourts,
+  ] = await Promise.all([
     User.countDocuments({ status: { $ne: 'deleted' } }),
-    Booking.countDocuments({ status: { $ne: 'Cancelled' } }),
+    User.countDocuments({
+      status: { $ne: 'deleted' },
+      createdAt: { $gte: last24h },
+    }),
+    Booking.countDocuments({ status: { $in: ['Pending', 'Confirmed'] } }),
     Payment.aggregate([
       { $match: { status: 'Success' } },
       { $group: { _id: null, total: { $sum: '$amount' } } },
     ]),
     Booking.countDocuments({
       createdAt: { $gte: todayStart },
-      status: { $ne: 'Cancelled' },
+      status: { $in: ['Pending', 'Confirmed'] },
     }),
+    Court.countDocuments({ status: { $ne: 'deleted' } }),
+    Court.countDocuments({ status: { $ne: 'deleted' }, isMaintenance: true }),
   ]);
+
+  const activeCourts = Math.max(totalCourts - maintenanceCourts, 0);
 
   return {
     totalUsers,
+    newUsers24h,
     totalBookings,
     totalRevenue: revenueResult[0]?.total || 0,
     todayBookings,
+    totalCourts,
+    activeCourts,
+    maintenanceCourts,
   };
 };
 

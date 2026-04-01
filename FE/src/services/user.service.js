@@ -4,8 +4,8 @@ import apiClient from './api.client';
  * Lấy danh sách toàn bộ người dùng.
  * @returns {Promise<object>} { items, pagination }
  */
-export const getUsers = async () => {
-  const { data } = await apiClient.get('/users');
+export const getUsers = async (params = {}) => {
+  const { data } = await apiClient.get('/users', { params });
   return data.data;
 };
 
@@ -36,7 +36,7 @@ export const createUser = async (userData) => {
  * @returns {Promise<object>} UserDTO
  */
 export const updateUser = async (id, userData) => {
-  const { data } = await apiClient.put(`/users/${id}`, userData);
+  const { data } = await apiClient.patch(`/users/${id}`, userData);
   return data.data;
 };
 

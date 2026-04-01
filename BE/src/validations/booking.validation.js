@@ -12,7 +12,7 @@ const createBookingSchema = z.object({
 
 const updateBookingStatusSchema = z.object({
   body: z.object({
-    status: z.enum(['Pending', 'Confirmed', 'Cancelled']),
+    status: z.enum(['Pending', 'Confirmed', 'Cancelled', 'Expired']),
   }),
 });
 
@@ -25,8 +25,16 @@ const updateBookingSchema = z.object({
   }),
 });
 
+const getBookedSlotsSchema = z.object({
+  query: z.object({
+    courtId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid Court ID'),
+    bookingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format (YYYY-MM-DD)'),
+  }),
+});
+
 module.exports = {
   createBookingSchema,
   updateBookingStatusSchema,
   updateBookingSchema,
+  getBookedSlotsSchema,
 };

@@ -21,8 +21,8 @@ const toFormData = (courtData) => {
  * Lấy danh sách toàn bộ sân đấu.
  * @returns {Promise<object>} { items, pagination }
  */
-export const getCourts = async () => {
-  const { data } = await apiClient.get('/courts');
+export const getCourts = async (params = {}) => {
+  const { data } = await apiClient.get('/courts', { params });
   return data.data;
 };
 

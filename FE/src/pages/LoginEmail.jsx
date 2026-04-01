@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { loginWithEmail } from '../services/auth.service';
+import { buildUserWithRoleFromToken } from '../utils/auth.utils';
 
 export default function LoginEmail() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
@@ -12,11 +13,18 @@ export default function LoginEmail() {
     try {
       setErrorMsg('');
       const response = await loginWithEmail(data);
-      localStorage.setItem('token', response.tokens.accessToken);
-      localStorage.setItem('user', JSON.stringify(response.user));
+      const accessToken = response?.tokens?.accessToken || '';
+      const userWithRole = buildUserWithRoleFromToken(response?.user, accessToken);
+
+      if (accessToken) {
+        localStorage.setItem('token', accessToken);
+      } else {
+        localStorage.removeItem('token');
+      }
+      localStorage.setItem('user', JSON.stringify(userWithRole));
       window.dispatchEvent(new Event('user-login'));
       // Navigate based on role or just to home
-      if (response.user.roleName === 'Admin' || response.user.roleName === 'Manager') {
+      if (userWithRole?.roleName === 'Admin') {
         navigate('/admin');
       } else {
         navigate('/');

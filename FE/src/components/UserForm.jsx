@@ -1,49 +1,56 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Button } from './ui/Button';
 import { useRoles } from '../hooks/useRoles';
 
+const normalizeId = (value) => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.id || value._id || '';
+};
+
 export default function UserForm({ onSubmit, initialData, onCancel }) {
-  const { data: roles } = useRoles();
+  const { data: rolesData } = useRoles();
+  const roles = useMemo(() => rolesData?.items || [], [rolesData]);
+
   const [formData, setFormData] = useState({
     fullName: initialData?.fullName || '',
     phoneNumber: initialData?.phoneNumber || '',
+    email: initialData?.email || '',
     password: '',
-    roleId: initialData?.roleId || '',
-    isVerified: initialData ? initialData.isVerified : true,
+    roleId: normalizeId(initialData?.roleId) || '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorDetails, setErrorDetails] = useState([]);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    if (errorDetails.length > 0) {
-      setErrorDetails((prev) => prev.filter((err) => err.field !== name));
-    }
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errorMessage) setErrorMessage('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsSubmitting(true);
-    setErrorDetails([]);
+    setErrorMessage('');
 
     try {
-      // Don't send empty password if updating (BE handles this usually, but we haven't implemented User Update API, only Create)
-      await onSubmit(formData);
-    } catch (error) {
-      console.error('Submit user error:', error);
-      if (error?.details) {
-        setErrorDetails(error.details);
-      } else {
-        alert(error.message || 'Có lỗi xảy ra!');
+      const payload = {
+        fullName: formData.fullName,
+        phoneNumber: formData.phoneNumber,
+        email: formData.email || undefined,
+        roleId: formData.roleId,
+      };
+
+      if (formData.password) {
+        payload.password = formData.password;
       }
+
+      await onSubmit(payload);
+    } catch (error) {
+      setErrorMessage(error?.message || 'Khong the luu nguoi dung');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const getFieldError = (fieldName) => {
-    return errorDetails.find((err) => err.field === fieldName)?.message;
   };
 
   return (
@@ -52,62 +59,111 @@ export default function UserForm({ onSubmit, initialData, onCancel }) {
         <header className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <div>
             <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-              TẠO NGƯỜI DÙNG
+              {initialData ? 'CAP NHAT NGUOI DUNG' : 'TAO NGUOI DUNG'}
             </h2>
             <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">
-              THÊM TÀI KHOẢN VÀ PHÂN QUYỀN
+              THONG TIN TAI KHOAN VA PHAN QUYEN
             </p>
           </div>
-          <button onClick={onCancel} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 font-bold transition-colors">✕</button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-200 text-slate-400 font-bold transition-colors"
+          >
+            X
+          </button>
         </header>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Họ Nguyễn (Tên Đầy Đủ) *</label>
-                <input type="text" name="fullName" value={formData.fullName} onChange={handleChange} required className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500 uppercase transition-all" />
-                {getFieldError('fullName') && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase">{getFieldError('fullName')}</p>}
-              </div>
+          {errorMessage ? (
+            <div className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-bold text-red-600">
+              {errorMessage}
+            </div>
+          ) : null}
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Số Điện Thoại *</label>
-                <input type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} required className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500 transition-all" />
-                {getFieldError('phoneNumber') && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase">{getFieldError('phoneNumber')}</p>}
-              </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Ho Ten *</label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                required
+                className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+              />
             </div>
 
             <div>
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Mật khẩu *</label>
-              <input type="password" name="password" value={formData.password} onChange={handleChange} required={!initialData} className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500 transition-all" />
-              {getFieldError('password') && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase">{getFieldError('password')}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nhóm Quyền (Role) *</label>
-                <select name="roleId" value={formData.roleId} onChange={handleChange} required className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500 transition-all uppercase">
-                  <option value="" disabled>--- CHỌN QUYỀN ---</option>
-                  {(roles || []).map(r => (
-                    <option key={r.id} value={r.id}>{r.roleName}</option>
-                  ))}
-                </select>
-                {getFieldError('roleId') && <p className="text-[10px] font-bold text-red-500 mt-1 uppercase">{getFieldError('roleId')}</p>}
-              </div>
-              
-               <div className="flex items-center gap-3 pt-6">
-                <input type="checkbox" id="isVerified" name="isVerified" checked={formData.isVerified} onChange={handleChange} className="w-5 h-5 text-teal-600 border-slate-300 rounded focus:ring-teal-500 focus:ring-offset-0" />
-                <label htmlFor="isVerified" className="text-xs font-black text-slate-900 uppercase">Đã xác thực</label>
-              </div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">So Dien Thoai *</label>
+              <input
+                type="tel"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                required
+                className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+              />
             </div>
           </div>
-          
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                {initialData ? 'Mat Khau Moi (Tuy Chon)' : 'Mat Khau *'}
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required={!initialData}
+                className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Nhom Quyen *</label>
+            <select
+              name="roleId"
+              value={formData.roleId}
+              onChange={handleChange}
+              required
+              className="w-full bg-slate-50 border-0 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-teal-500 uppercase"
+            >
+              <option value="" disabled>
+                --- CHON QUYEN ---
+              </option>
+              {roles.map((role) => (
+                <option key={role.id} value={role.id}>
+                  {role.roleName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
-            <button type="button" onClick={onCancel} className="px-6 py-3 rounded-xl text-xs font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 hover:text-slate-600 transition-colors">
-              HỦY
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-3 rounded-xl text-xs font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50 hover:text-slate-600 transition-colors"
+            >
+              HUY
             </button>
             <Button type="submit" isLoading={isSubmitting}>
-              TẠO NGƯỜI DÙNG
+              {initialData ? 'CAP NHAT' : 'TAO NGUOI DUNG'}
             </Button>
           </div>
         </form>

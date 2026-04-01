@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCourts } from '../hooks/useCourts';
+import { getApiOrigin } from '../services/api.client';
+
+const formatPricePerHour = (price) => {
+  const amount = Number(price || 0);
+  if (Number.isNaN(amount) || amount <= 0) return '--';
+  if (amount % 1000 === 0) return `${(amount / 1000).toLocaleString('vi-VN')}K`;
+  return amount.toLocaleString('vi-VN');
+};
 
 export default function Home() {
+  const apiOrigin = getApiOrigin();
   const { data, isLoading } = useCourts();
   const [activeTab, setActiveTab] = useState('ALL');
 
@@ -151,7 +160,7 @@ export default function Home() {
               <article key={court.id} className="group bg-white rounded-[2rem] border border-slate-100 overflow-hidden hover:shadow-2xl hover:shadow-slate-200 transition-all hover:-translate-y-2 duration-500">
                 <div className="aspect-[4/3] bg-slate-100 relative overflow-hidden">
                   {court.imageUrl ? (
-                    <img src={`http://localhost:5000${court.imageUrl}`} alt={court.courtName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img src={`${apiOrigin}${court.imageUrl}`} alt={court.courtName} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-4xl">🏸</div>
                   )}
@@ -169,11 +178,21 @@ export default function Home() {
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                     <div>
                       <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Giá từ</p>
-                      <p className="text-xl font-black text-teal-600 mt-0.5">80K<span className="text-[10px] text-slate-400 ml-1">/giờ</span></p>
+                      <p className="text-xl font-black text-teal-600 mt-0.5">
+                        {formatPricePerHour(court.basePrice)}
+                        <span className="text-[10px] text-slate-400 ml-1">/giờ</span>
+                      </p>
                     </div>
-                    <button className="px-6 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-600 transition-colors shadow-lg shadow-slate-900/10">
-                      Chi tiết
-                    </button>
+                    <div className="flex items-center gap-2">
+  <Link to={`/courts/${court.id}`} className="px-4 py-2.5 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-600 transition-colors shadow-lg shadow-slate-900/10">
+    Chi tiet
+  </Link>
+  {!court.isMaintenance ? (
+    <Link to={`/courts/${court.id}?book=1`} className="px-4 py-2.5 bg-teal-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-teal-700 transition-colors shadow-lg shadow-teal-600/20">
+      Dat san
+    </Link>
+  ) : null}
+</div>
                   </div>
                 </div>
               </article>
@@ -225,3 +244,4 @@ export default function Home() {
     </div>
   );
 }
+

@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useCourts, useCreateCourt, useUpdateCourt, useDeleteCourt } from '../hooks/useCourts';
 import { Button } from '../components/ui/Button';
 import CourtForm from '../components/CourtForm';
+import { getApiOrigin } from '../services/api.client';
 
 export default function Courts() {
+  const apiOrigin = getApiOrigin();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingCourt, setEditingCourt] = useState(null);
   const [viewMode, setViewMode] = useState('table'); // 'table' hoặc 'grid'
@@ -102,7 +104,7 @@ export default function Courts() {
                   <article className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0">
                         {court.imageUrl ? (
-                            <img src={`http://localhost:5000${court.imageUrl}`} alt="" className="w-full h-full object-cover" />
+                            <img src={`${apiOrigin}${court.imageUrl}`} alt="" className="w-full h-full object-cover" />
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-300 uppercase italic">NO IMG</div>
                         )}
@@ -159,7 +161,7 @@ export default function Courts() {
             <article key={court.id} className="bento-card group hover:scale-[1.02] transition-transform flex flex-col gap-4">
               <div className="aspect-video rounded-xl bg-slate-100 overflow-hidden relative">
                 {court.imageUrl ? (
-                  <img src={`http://localhost:5000${court.imageUrl}`} alt="" className="w-full h-full object-cover" />
+                  <img src={`${apiOrigin}${court.imageUrl}`} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[10px] font-black text-slate-300 uppercase italic">NO IMAGE</div>
                 )}
