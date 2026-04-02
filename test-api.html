@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test API Connection</title>
+</head>
+<body>
+    <h1>Test API Connection</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testRegister()">Test Register</button>
+    <pre id="result"></pre>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api/v1';
+        const API_PUBLIC_KEY = 'local_public_key';
+        const API_SECRET_KEY = 'local_secret_key';
+
+        async function testLogin() {
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-public-key': API_PUBLIC_KEY,
+                        'x-api-secret-key': API_SECRET_KEY
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: '0123456789',
+                        password: 'test123'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = 
+                    'Login Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 
+                    'Login Error:\n' + error.message;
+            }
+        }
+
+        async function testRegister() {
+            try {
+                const response = await fetch(`${API_URL}/auth/send-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-api-public-key': API_PUBLIC_KEY,
+                        'x-api-secret-key': API_SECRET_KEY
+                    },
+                    body: JSON.stringify({
+                        phoneNumber: '0987654321'
+                    })
+                });
+                const data = await response.json();
+                document.getElementById('result').textContent = 
+                    'Register Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 
+                    'Register Error:\n' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

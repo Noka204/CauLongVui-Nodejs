@@ -45,15 +45,13 @@ const paymentSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-paymentSchema.pre('validate', function ensureSinglePaymentTarget(next) {
+paymentSchema.pre('validate', function ensureSinglePaymentTarget() {
   const hasBooking = Boolean(this.bookingId);
   const hasOrder = Boolean(this.orderId);
 
   if (hasBooking === hasOrder) {
     this.invalidate('bookingId', 'Payment must reference exactly one target: bookingId or orderId');
   }
-
-  return next();
 });
 
 // Lookup by booking

@@ -40,6 +40,8 @@ export default function CourtDetail() {
   const [bookingMessage, setBookingMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
+    // Route param change should reset local booking selector state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedCourtId(id);
     setSelectedSlotIds([]);
   }, [id]);

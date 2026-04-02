@@ -60,10 +60,10 @@ const runPaymentSideEffectsOnSuccess = async (payment, session) => {
     await Booking.findByIdAndUpdate(
       payment.bookingId,
       { status: 'Confirmed' },
-      { session }
+      {}
     );
 
-    await PendingExpiry.deleteOne({ bookingId: payment.bookingId }, { session });
+    await PendingExpiry.deleteOne({ bookingId: payment.bookingId }, {});
   }
 };
 
@@ -165,27 +165,27 @@ const findById = async (id, user) => {
  * @returns {Promise<Object>}
  */
 const updateStatus = async (id, status) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession(); // Disabled for non-replica set
+  // session.startTransaction(); // Disabled
 
   try {
-    const payment = await Payment.findById(id).session(session);
+    const payment = await Payment.findById(id);
     if (!payment) throw new BadRequestError('Payment record not found');
 
     payment.status = status;
-    await payment.save({ session });
+    await payment.save({});
 
     if (status === 'Success') {
       await runPaymentSideEffectsOnSuccess(payment, session);
     }
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     return payment;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 };
@@ -260,21 +260,21 @@ const handleVnpayCallback = async (query) => {
     return { isSuccess: false, paymentId: payment._id.toString(), amount: result.amount, message: 'Amount mismatch' };
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession(); // Disabled for non-replica set
+  // session.startTransaction(); // Disabled
   try {
     payment.status = 'Success';
     payment.transactionRef = result.transactionId || null;
     payment.gatewayResponse = JSON.stringify(query);
-    await payment.save({ session });
+    await payment.save({});
 
     await runPaymentSideEffectsOnSuccess(payment, session);
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 
@@ -362,8 +362,8 @@ const handleMomoCallback = async (query) => {
     return { isSuccess: false, paymentId: payment._id.toString(), amount: result.amount, message: 'MoMo payment failed' };
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession(); // Disabled for non-replica set
+  // session.startTransaction(); // Disabled
   try {
     payment.status = 'Success';
     payment.transactionRef = result.momoOrderId;
@@ -371,15 +371,15 @@ const handleMomoCallback = async (query) => {
     if (result.amount) {
       payment.amount = Number(result.amount);
     }
-    await payment.save({ session });
+    await payment.save({});
 
     await runPaymentSideEffectsOnSuccess(payment, session);
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 
@@ -429,21 +429,21 @@ const handleMomoIpn = async (body) => {
     return { isSuccess: false, message: 'Amount mismatch' };
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession(); // Disabled for non-replica set
+  // session.startTransaction(); // Disabled
   try {
     payment.status = 'Success';
     payment.transactionRef = body.orderId || null;
     payment.gatewayResponse = JSON.stringify(body);
-    await payment.save({ session });
+    await payment.save({});
 
     await runPaymentSideEffectsOnSuccess(payment, session);
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 

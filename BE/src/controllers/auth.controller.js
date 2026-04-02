@@ -24,7 +24,13 @@ const logout = async (req, res) => {
 const sendOtp = async (req, res) => {
   const { email } = req.body;
   const result = await authService.registerWithEmail(email);
-  return sendResponse(res, 200, true, result.message);
+  return sendResponse(
+    res,
+    200,
+    true,
+    result.message,
+    result.devOtp ? { devOtp: result.devOtp } : null
+  );
 };
 
 const verifyOtp = async (req, res) => {

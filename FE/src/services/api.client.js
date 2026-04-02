@@ -4,9 +4,15 @@ import axios from 'axios';
  * Centralized Axios instance for CauLongVui API.
  * Base URL can be configured via VITE_API_URL.
  */
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 const API_PUBLIC_KEY = import.meta.env.VITE_API_PUBLIC_KEY || 'local_public_key';
 const API_SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY || 'local_secret_key';
+
+console.log('🔧 API Configuration:', {
+  API_BASE_URL,
+  API_PUBLIC_KEY,
+  env: import.meta.env.VITE_API_URL
+});
 
 export const getApiBaseUrl = () => API_BASE_URL;
 
@@ -14,7 +20,7 @@ export const getApiOrigin = () => {
   try {
     return new URL(API_BASE_URL).origin;
   } catch {
-    return 'http://localhost:5001';
+    return 'http://localhost:5000';
   }
 };
 

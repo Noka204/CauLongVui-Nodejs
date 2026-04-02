@@ -112,18 +112,18 @@ const create = async (sellerId, bookingId) => {
  * @returns {Promise<Object>}
  */
 const take = async (exchangeId, buyerId) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession(); // Disabled for non-replica set
+  // session.startTransaction(); // Disabled
 
   try {
     // 1. Find exchange and validate
-    const exchange = await BookingExchange.findById(exchangeId).session(session);
+    const exchange = await BookingExchange.findById(exchangeId);
     if (!exchange) throw new NotFoundError('Booking Exchange not found');
     if (exchange.status !== 'Open') throw new BadRequestError('This exchange is no longer available');
     if (exchange.sellerId.toString() === buyerId) throw new BadRequestError('Cannot buy your own listing');
 
     // 2. Check buyer balance
-    const buyer = await User.findById(buyerId).session(session);
+    const buyer = await User.findById(buyerId);
     if (!buyer) throw new NotFoundError('Buyer not found');
     if (buyer.balance < exchange.price) {
       throw new BadRequestError(`Insufficient balance. Required: ${exchange.price}, Available: ${buyer.balance}`);
@@ -131,33 +131,33 @@ const take = async (exchangeId, buyerId) => {
 
     // 3. Deduct buyer balance
     buyer.balance -= exchange.price;
-    await buyer.save({ session });
+    await buyer.save({});
 
     // 4. Add to seller balance
-    const seller = await User.findById(exchange.sellerId).session(session);
+    const seller = await User.findById(exchange.sellerId);
     if (!seller) throw new NotFoundError('Seller not found');
     seller.balance += exchange.price;
-    await seller.save({ session });
+    await seller.save({});
 
     // 5. Transfer booking ownership
     await Booking.findByIdAndUpdate(
       exchange.bookingId,
       { userId: buyerId },
-      { session }
+      {}
     );
 
     // 6. Mark exchange as completed
     exchange.status = 'Completed';
     exchange.buyerId = buyerId;
-    await exchange.save({ session });
+    await exchange.save({});
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     return exchange;
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     throw error;
   }
 };

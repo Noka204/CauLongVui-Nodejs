@@ -1,5 +1,4 @@
 import React from 'react';
-import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function Button({ className, variant = 'primary', isLoading, children, ...props }) {

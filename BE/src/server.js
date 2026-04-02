@@ -21,7 +21,8 @@ socketService.init(io);
 // Connect to Database
 connectDB().then(() => {
   // MUST start watchers AFTER DB connection is ready
-  initWatchers();
+  // initWatchers(); // Disabled: Requires MongoDB replica set
+  console.log('⚠️  Change Stream watchers disabled (requires replica set)');
 });
 
 server.listen(PORT, () => {

@@ -84,8 +84,19 @@ const registerWithEmail = async (email) => {
   await OTP.deleteMany({ email });
   await OTP.create({ email, otpCode });
 
-  await emailService.sendOtpEmail(email, otpCode);
-  return { message: 'OTP sent successfully' };
+  try {
+    await emailService.sendOtpEmail(email, otpCode);
+    return { message: 'OTP sent successfully' };
+  } catch (error) {
+    // Dev fallback: avoid FE timeout when SMTP is blocked/unavailable on local machine.
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[OTP-DEV] Email service unavailable. Using console OTP fallback.');
+      console.warn(`[OTP-DEV] ${email} => ${otpCode}`);
+      return { message: 'Email service unavailable. OTP has been printed in backend console for development.', devOtp: otpCode };
+    }
+
+    throw new BadRequestError('Cannot send OTP email at the moment. Please try again later.');
+  }
 };
 
 /**

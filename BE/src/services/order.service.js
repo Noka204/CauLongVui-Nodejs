@@ -168,48 +168,37 @@ const updateStatus = async (id, status) => {
  * @returns {Promise<Object>}
  */
 const returnEquipment = async (orderId, itemsToReturn) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const order = await Order.findById(orderId).session(session);
-    if (!order) {
-      throw new NotFoundError('Food Order not found');
-    }
-    if (order.status === 'Cancelled') {
-      throw new BadRequestError('Cannot return equipment for a cancelled order');
-    }
-
-    for (const returnItem of itemsToReturn) {
-      const orderItem = order.items.find((i) => i.productId.toString() === returnItem.productId);
-      if (!orderItem) {
-        throw new BadRequestError(`Item with Product ID ${returnItem.productId} not found in this order`);
-      }
-      if (!orderItem.isRent) {
-        throw new BadRequestError(`Item ${returnItem.productId} is not a rented equipment`);
-      }
-      if (orderItem.returnedQuantity + returnItem.returnQuantity > orderItem.quantity) {
-        throw new BadRequestError(`Cannot return ${returnItem.returnQuantity} items. Already returned ${orderItem.returnedQuantity} out of ${orderItem.quantity}`);
-      }
-
-      orderItem.returnedQuantity += returnItem.returnQuantity;
-
-      await Product.findByIdAndUpdate(returnItem.productId, {
-        $inc: { stockQuantity: returnItem.returnQuantity },
-      }, { session });
-    }
-
-    await order.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    return findById(orderId);
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    throw error;
+  // Transaction disabled for non-replica set MongoDB
+  const order = await Order.findById(orderId);
+  if (!order) {
+    throw new NotFoundError('Food Order not found');
   }
+  if (order.status === 'Cancelled') {
+    throw new BadRequestError('Cannot return equipment for a cancelled order');
+  }
+
+  for (const returnItem of itemsToReturn) {
+    const orderItem = order.items.find((i) => i.productId.toString() === returnItem.productId);
+    if (!orderItem) {
+      throw new BadRequestError(`Item with Product ID ${returnItem.productId} not found in this order`);
+    }
+    if (!orderItem.isRent) {
+      throw new BadRequestError(`Item ${returnItem.productId} is not a rented equipment`);
+    }
+    if (orderItem.returnedQuantity + returnItem.returnQuantity > orderItem.quantity) {
+      throw new BadRequestError(`Cannot return ${returnItem.returnQuantity} items. Already returned ${orderItem.returnedQuantity} out of ${orderItem.quantity}`);
+    }
+
+    orderItem.returnedQuantity += returnItem.returnQuantity;
+
+    await Product.findByIdAndUpdate(returnItem.productId, {
+      $inc: { stockQuantity: returnItem.returnQuantity },
+    });
+  }
+
+  await order.save();
+
+  return findById(orderId);
 };
 
 module.exports = {
