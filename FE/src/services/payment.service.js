@@ -1,18 +1,19 @@
-import apiClient from './api.client';
+﻿import apiClient from './api.client';
 
 /**
- * Lấy danh sách thanh toán.
+ * Lay danh sach thanh toan.
+ * @param {object} params
  * @returns {Promise<object>}
  */
-export const getPayments = async () => {
-  const { data } = await apiClient.get('/payments');
+export const getPayments = async (params = {}) => {
+  const { data } = await apiClient.get('/payments', { params });
   return data.data;
 };
 
 /**
- * Lấy thông tin thanh toán chi tiết.
- * @param {string} id - Payment ObjectId
- * @returns {Promise<object>} PaymentDTO
+ * Lay thong tin thanh toan chi tiet.
+ * @param {string} id
+ * @returns {Promise<object>}
  */
 export const getPaymentById = async (id) => {
   const { data } = await apiClient.get(`/payments/${id}`);
@@ -20,9 +21,9 @@ export const getPaymentById = async (id) => {
 };
 
 /**
- * Tạo thanh toán mới.
- * @param {{ bookingId: string, userId: string, amount: number, paymentMethod: 'MoMo'|'VNPay'|'Cash', gatewayResponse?: string }} paymentData
- * @returns {Promise<object>} PaymentDTO
+ * Tao thanh toan moi.
+ * @param {{ bookingId?: string, orderId?: string, paymentMethod: 'MoMo'|'VNPay'|'Cash', amount?: number, gatewayResponse?: string }} paymentData
+ * @returns {Promise<object>}
  */
 export const createPayment = async (paymentData) => {
   const { data } = await apiClient.post('/payments', paymentData);
@@ -30,10 +31,20 @@ export const createPayment = async (paymentData) => {
 };
 
 /**
- * Cập nhật trạng thái thanh toán.
+ * Tao link thanh toan MoMo.
+ * @param {{ bookingId?: string, orderId?: string, fullName?: string }} payload
+ * @returns {Promise<{ payUrl: string, paymentId: string }>}
+ */
+export const createMomoPayment = async (payload) => {
+  const { data } = await apiClient.post('/payments/momo/create', payload);
+  return data.data;
+};
+
+/**
+ * Cap nhat trang thai thanh toan.
  * @param {string} id
  * @param {'Pending' | 'Success' | 'Failed'} status
- * @returns {Promise<object>} PaymentDTO
+ * @returns {Promise<object>}
  */
 export const updatePaymentStatus = async (id, status) => {
   const { data } = await apiClient.patch(`/payments/${id}/status`, { status });

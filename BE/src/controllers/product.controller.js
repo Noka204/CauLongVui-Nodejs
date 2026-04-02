@@ -1,4 +1,4 @@
-const productService = require('../services/product.service');
+﻿const productService = require('../services/product.service');
 const { sendResponse } = require('../utils/response');
 const { productDto } = require('../dtos/product.dto');
 
@@ -31,9 +31,15 @@ const updateProduct = async (req, res) => {
   return sendResponse(res, 200, true, 'Update product success', productDto(product));
 };
 
+const deleteProduct = async (req, res) => {
+  const product = await productService.remove(req.params.id);
+  return sendResponse(res, 200, true, 'Delete product success', productDto(product));
+};
+
 module.exports = {
   getProducts,
   getProductById,
   createProduct,
   updateProduct,
+  deleteProduct,
 };

@@ -28,6 +28,8 @@ const statusClass = (status) => {
   return 'bg-amber-50 text-amber-700 border-amber-100';
 };
 
+const canOrder = (status) => status === 'Confirmed' || status === 'Pending';
+
 export default function Profile() {
   const navigate = useNavigate();
 
@@ -130,7 +132,7 @@ export default function Profile() {
                 const bookingId = normalizeId(booking.id || booking._id);
 
                 return (
-                  <article key={bookingId} className="p-5 rounded-2xl border border-slate-100 bg-slate-50 grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                  <article key={bookingId} className="p-5 rounded-2xl border border-slate-100 bg-slate-50 grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Booking</p>
                       <p className="text-sm font-black text-slate-900">#{bookingId.slice(-8)}</p>
@@ -148,10 +150,21 @@ export default function Profile() {
                       <p className="text-xs font-bold text-teal-600 mt-1">{formatMoney(booking.totalPrice)}</p>
                     </div>
 
-                    <div className="md:text-right">
+                    <div className="md:text-right md:col-span-2">
                       <span className={`inline-flex px-3 py-1 rounded-full border text-[10px] font-black uppercase tracking-widest ${statusClass(booking.status)}`}>
                         {booking.status}
                       </span>
+
+                      <div className="mt-3">
+                        <button
+                          type="button"
+                          onClick={() => navigate(`/bookings/${bookingId}/order`)}
+                          disabled={!canOrder(booking.status)}
+                          className="px-4 py-2 rounded-xl bg-teal-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Chon Order
+                        </button>
+                      </div>
                     </div>
                   </article>
                 );

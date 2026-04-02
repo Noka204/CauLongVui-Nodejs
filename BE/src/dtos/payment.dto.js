@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Map Payment model to DTO
  * @param {Object} payment
  * @returns {Object|null}
@@ -8,6 +8,7 @@ const paymentDto = (payment) => {
   return {
     id: payment._id,
     bookingId: payment.bookingId,
+    orderId: payment.orderId,
     userId: payment.userId,
     amount: payment.amount,
     paymentMethod: payment.paymentMethod,

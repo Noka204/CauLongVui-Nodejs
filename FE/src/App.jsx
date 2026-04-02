@@ -8,6 +8,8 @@ import Bookings from './pages/Bookings';
 import Vouchers from './pages/Vouchers';
 import Users from './pages/Users';
 import Roles from './pages/Roles';
+import AdminProducts from './pages/AdminProducts';
+import AdminOrders from './pages/AdminOrders';
 import { useSocket } from './hooks/useSocket';
 
 import MainLayout from './layouts/MainLayout';
@@ -16,6 +18,8 @@ import CourtDetail from './pages/CourtDetail';
 import LoginEmail from './pages/LoginEmail';
 import RegisterEmail from './pages/RegisterEmail';
 import Profile from './pages/Profile';
+import BookingOrder from './pages/BookingOrder';
+import PaymentResult from './pages/PaymentResult';
 
 const queryClient = new QueryClient();
 
@@ -36,11 +40,15 @@ function App() {
           <Route path="/login" element={<MainLayout><LoginEmail /></MainLayout>} />
           <Route path="/register" element={<MainLayout><RegisterEmail /></MainLayout>} />
           <Route path="/profile" element={<MainLayout><Profile /></MainLayout>} />
+          <Route path="/bookings/:bookingId/order" element={<MainLayout><BookingOrder /></MainLayout>} />
+          <Route path="/payment/result" element={<MainLayout><PaymentResult /></MainLayout>} />
 
           {/* Admin Dashboard Routes */}
           <Route path="/admin" element={<DashboardLayout><Dashboard /></DashboardLayout>} />
           <Route path="/admin/courts" element={<DashboardLayout><Courts /></DashboardLayout>} />
           <Route path="/admin/bookings" element={<DashboardLayout><Bookings /></DashboardLayout>} />
+          <Route path="/admin/products" element={<DashboardLayout><AdminProducts /></DashboardLayout>} />
+          <Route path="/admin/orders" element={<DashboardLayout><AdminOrders /></DashboardLayout>} />
           <Route path="/admin/vouchers" element={<DashboardLayout><Vouchers /></DashboardLayout>} />
           <Route path="/admin/users" element={<DashboardLayout><Users /></DashboardLayout>} />
           <Route path="/admin/roles" element={<DashboardLayout><Roles /></DashboardLayout>} />

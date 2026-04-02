@@ -1,10 +1,11 @@
-const paymentService = require('../services/payment.service');
+﻿const paymentService = require('../services/payment.service');
 const { sendResponse } = require('../utils/response');
 const { paymentDto } = require('../dtos/payment.dto');
 
 const createPayment = async (req, res) => {
   const userId = req.user.id;
-  const payment = await paymentService.create({ ...req.body, userId });
+  const roleName = req.user.roleName;
+  const payment = await paymentService.create({ ...req.body, userId, roleName });
   return sendResponse(res, 201, true, 'Payment record created', paymentDto(payment));
 };
 
@@ -25,7 +26,7 @@ const updatePaymentStatus = async (req, res) => {
   return sendResponse(res, 200, true, 'Update payment status success', paymentDto(payment));
 };
 
-// ─── VNPay Handlers ──────────────────────────────────────────────────
+// ------------------------- VNPay handlers -------------------------
 
 const createVnpayPayment = async (req, res) => {
   const userId = req.user.id;
@@ -61,12 +62,21 @@ const vnpayIpn = async (req, res) => {
   });
 };
 
-// ─── MoMo Handlers ──────────────────────────────────────────────────
+// ------------------------- MoMo handlers -------------------------
 
 const createMomoPayment = async (req, res) => {
   const userId = req.user.id;
-  const { bookingId, fullName } = req.body;
-  const result = await paymentService.createMomoPayment({ bookingId, userId, fullName });
+  const roleName = req.user.roleName;
+  const { bookingId, orderId, fullName } = req.body;
+
+  const result = await paymentService.createMomoPayment({
+    bookingId,
+    orderId,
+    userId,
+    roleName,
+    fullName,
+  });
+
   return sendResponse(res, 201, true, 'MoMo payment URL created', {
     payUrl: result.payUrl,
     paymentId: result.paymentId,

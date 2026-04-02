@@ -1,10 +1,15 @@
-const mongoose = require('mongoose');
+﻿const mongoose = require('mongoose');
 
 const paymentSchema = new mongoose.Schema({
   bookingId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Booking',
-    required: true,
+    default: null,
+  },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+    default: null,
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -40,11 +45,24 @@ const paymentSchema = new mongoose.Schema({
   },
 }, { timestamps: true });
 
-// Tìm payment theo booking (dùng trong dependency check)
+paymentSchema.pre('validate', function ensureSinglePaymentTarget(next) {
+  const hasBooking = Boolean(this.bookingId);
+  const hasOrder = Boolean(this.orderId);
+
+  if (hasBooking === hasOrder) {
+    this.invalidate('bookingId', 'Payment must reference exactly one target: bookingId or orderId');
+  }
+
+  return next();
+});
+
+// Lookup by booking
 paymentSchema.index({ bookingId: 1, status: 1 });
-// Lịch sử thanh toán theo user
+// Lookup by food order
+paymentSchema.index({ orderId: 1, status: 1 });
+// Payment history by user
 paymentSchema.index({ userId: 1, createdAt: -1 });
-// Lọc theo trạng thái + phương thức
+// Filter by status and method
 paymentSchema.index({ status: 1, paymentMethod: 1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);

@@ -1,43 +1,29 @@
 ﻿import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import * as paymentService from '../services/payment.service';
+import * as productService from '../services/product.service';
 
-const QUERY_KEY = ['payments'];
+const QUERY_KEY = ['products'];
 
-/**
- * Hook: Lay danh sach thanh toan.
- */
-export const usePayments = (params = {}, options = {}) => {
+export const useProducts = (params = {}, options = {}) => {
   return useQuery({
     queryKey: [...QUERY_KEY, params],
-    queryFn: () => paymentService.getPayments(params),
+    queryFn: () => productService.getProducts(params),
     ...options,
   });
 };
 
-/**
- * Hook: Tao thanh toan moi.
- */
-export const useCreatePayment = (options = {}) => {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: paymentService.createPayment,
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      options.onSuccess?.(data);
-    },
-    onError: options.onError,
+export const useProductDetail = (id, options = {}) => {
+  return useQuery({
+    queryKey: [...QUERY_KEY, id],
+    queryFn: () => productService.getProductById(id),
+    enabled: !!id,
+    ...options,
   });
 };
 
-/**
- * Hook: Tao link thanh toan MoMo.
- */
-export const useCreateMomoPayment = (options = {}) => {
+export const useCreateProduct = (options = {}) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: paymentService.createMomoPayment,
+    mutationFn: productService.createProduct,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       options.onSuccess?.(data);
@@ -46,13 +32,22 @@ export const useCreateMomoPayment = (options = {}) => {
   });
 };
 
-/**
- * Hook: Cap nhat trang thai thanh toan.
- */
-export const useUpdatePaymentStatus = (options = {}) => {
+export const useUpdateProduct = (options = {}) => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }) => paymentService.updatePaymentStatus(id, status),
+    mutationFn: ({ id, data }) => productService.updateProduct(id, data),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      options.onSuccess?.(data);
+    },
+    onError: options.onError,
+  });
+};
+
+export const useDeleteProduct = (options = {}) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: productService.deleteProduct,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: QUERY_KEY });
       options.onSuccess?.(data);

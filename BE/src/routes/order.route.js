@@ -1,13 +1,13 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/order.controller');
 const validate = require('../middlewares/validate.middleware');
 const { createOrderSchema, updateOrderStatusSchema, returnEquipmentSchema } = require('../validations/order.validation');
-const { validateApiKey } = require('../middlewares/auth.middleware');
+const { validateApiKey, verifyToken } = require('../middlewares/auth.middleware');
 
-router.get('/', orderController.getOrders);
-router.get('/:id', orderController.getOrderById);
-router.post('/', validate(createOrderSchema), orderController.createOrder);
+router.get('/', verifyToken, orderController.getOrders);
+router.get('/:id', verifyToken, orderController.getOrderById);
+router.post('/', verifyToken, validate(createOrderSchema), orderController.createOrder);
 
 // Status update (Secret key required)
 router.patch('/:id/status', validateApiKey('secret'), validate(updateOrderStatusSchema), orderController.updateOrderStatus);

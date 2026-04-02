@@ -17,11 +17,12 @@ export const useBookings = (params = {}, options = {}) => {
 /**
  * Hook: Get booking detail
  */
-export const useBookingDetail = (id) => {
+export const useBookingDetail = (id, options = {}) => {
   return useQuery({
     queryKey: [...QUERY_KEY, id],
     queryFn: () => bookingService.getBookingById(id),
     enabled: !!id,
+    ...options,
   });
 };
 
